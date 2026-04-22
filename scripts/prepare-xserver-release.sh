@@ -7,9 +7,20 @@ BUILD_DIR="${1:-${ROOT_DIR}/.deploy}"
 LARAVEL_DIR="${BUILD_DIR%/}/laravel_app"
 PUBLIC_DIR="${BUILD_DIR%/}/public_html"
 LARAVEL_BASE_PATH="${DEPLOY_LARAVEL_BASE_PATH:-}"
+NORMALIZED_LARAVEL_BASE_PATH="${LARAVEL_BASE_PATH%/}"
 
 if [[ -z "${LARAVEL_BASE_PATH}" ]]; then
     echo "DEPLOY_LARAVEL_BASE_PATH is required." >&2
+    exit 1
+fi
+
+if [[ "${LARAVEL_BASE_PATH}" != /* ]]; then
+    echo "DEPLOY_LARAVEL_BASE_PATH must be an absolute path, for example /home/<account>/laravel_app." >&2
+    exit 1
+fi
+
+if [[ -z "${NORMALIZED_LARAVEL_BASE_PATH}" ]]; then
+    echo "DEPLOY_LARAVEL_BASE_PATH must point to the Laravel app directory and cannot be '/'." >&2
     exit 1
 fi
 
@@ -46,7 +57,7 @@ if [[ "${match_count}" != "1" ]]; then
     exit 1
 fi
 
-export DEPLOY_LARAVEL_BASE_PATH="${LARAVEL_BASE_PATH%/}"
+export DEPLOY_LARAVEL_BASE_PATH="${NORMALIZED_LARAVEL_BASE_PATH}"
 perl -0pi -e 's/\Q\/home\/your_account\/laravel_app\E/$ENV{DEPLOY_LARAVEL_BASE_PATH}/g' "${PUBLIC_DIR}/index.php"
 
 echo "Prepared release bundle:"

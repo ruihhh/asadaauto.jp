@@ -52,6 +52,16 @@ jobs:
             fi
           done
 
+          if [[ "${DEPLOY_LARAVEL_BASE_PATH}" != /* ]]; then
+            echo "::error::DEPLOY_LARAVEL_BASE_PATH must be an absolute path like /home/<account>/laravel_app."
+            exit 1
+          fi
+
+          if [[ "${DEPLOY_LARAVEL_BASE_PATH%/}" == "" ]]; then
+            echo "::error::DEPLOY_LARAVEL_BASE_PATH cannot be '/'. Point it to the Laravel app directory."
+            exit 1
+          fi
+
           for dir_var in FTP_LARAVEL_APP_DIR FTP_PUBLIC_HTML_DIR; do
             if [[ "${!dir_var}" != */ ]]; then
               echo "::error::${dir_var} must end with a trailing slash (/)."
