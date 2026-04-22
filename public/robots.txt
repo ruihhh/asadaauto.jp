@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+Disallow: /password/
+Disallow: /contact/thanks
+Disallow: /buy/thanks
+Disallow: /cars/compare
+Disallow: /favorites
+
+Sitemap: https://asadaauto.jp/sitemap.xml

@@ -1,0 +1,110 @@
+name: Deploy to Xserver via FTP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-ftp-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and upload release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+    env:
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+      FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+      DEPLOY_LARAVEL_BASE_PATH: ${{ vars.DEPLOY_LARAVEL_BASE_PATH }}
+      FTP_LARAVEL_APP_DIR: ${{ vars.FTP_LARAVEL_APP_DIR }}
+      FTP_PUBLIC_HTML_DIR: ${{ vars.FTP_PUBLIC_HTML_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate deployment settings
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            FTP_SERVER
+            FTP_USERNAME
+            FTP_PASSWORD
+            DEPLOY_LARAVEL_BASE_PATH
+            FTP_LARAVEL_APP_DIR
+            FTP_PUBLIC_HTML_DIR
+          )
+
+          for var_name in "${required_vars[@]}"; do
+            if [ -z "${!var_name}" ]; then
+              echo "::error::${var_name} is not set."
+              exit 1
+            fi
+          done
+
+          for dir_var in FTP_LARAVEL_APP_DIR FTP_PUBLIC_HTML_DIR; do
+            if [[ "${!dir_var}" != */ ]]; then
+              echo "::error::${dir_var} must end with a trailing slash (/)."
+              exit 1
+            fi
+          done
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prepare Xserver release bundle
+        run: ./scripts/prepare-xserver-release.sh
+
+      - name: Upload Laravel application
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_SERVER }}
+          username: ${{ env.FTP_USERNAME }}
+          password: ${{ env.FTP_PASSWORD }}
+          port: ${{ env.FTP_PORT }}
+          protocol: ${{ env.FTP_PROTOCOL }}
+          local-dir: ./.deploy/laravel_app/
+          server-dir: ${{ env.FTP_LARAVEL_APP_DIR }}
+          state-name: .ftp-deploy-sync-state-laravel.json
+          log-level: standard
+
+      - name: Upload public_html
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_SERVER }}
+          username: ${{ env.FTP_USERNAME }}
+          password: ${{ env.FTP_PASSWORD }}
+          port: ${{ env.FTP_PORT }}
+          protocol: ${{ env.FTP_PROTOCOL }}
+          local-dir: ./.deploy/public_html/
+          server-dir: ${{ env.FTP_PUBLIC_HTML_DIR }}
+          state-name: .ftp-deploy-sync-state-public.json
+          log-level: standard
