@@ -90,6 +90,9 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
+      - name: Run deployment diagnostics
+        run: ./scripts/debug-xserver-release.sh
+
       - name: Prepare Xserver release bundle
         run: ./scripts/prepare-xserver-release.sh
 

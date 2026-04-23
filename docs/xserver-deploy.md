@@ -62,6 +62,7 @@ php artisan optimize
 
 - Workflow: `.github/workflows/deploy-xserver-ftp.yml`
 - 配布準備スクリプト: `scripts/prepare-xserver-release.sh`
+- 診断スクリプト: `scripts/debug-xserver-release.sh`
 
 ### 6-1. GitHub 側で設定する値
 
@@ -109,3 +110,4 @@ Variables:
 - `push` トリガーなので、Pull Request を `main` にマージした場合も自動で実行されます
 - DB マイグレーションや `php artisan optimize` は FTP だけでは実行できないため、必要時はサーバー側で別途実行してください
 - `public/storage` はサーバー側の `php artisan storage:link` を維持する前提で、自動アップロード対象から外しています
+- GitHub Actions 上で失敗箇所が分かりにくい場合は、`Run deployment diagnostics` のログを確認してください。FTP パスワードなどは表示せず、変数・テンプレート・生成物の状態だけを出します
