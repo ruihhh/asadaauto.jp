@@ -126,6 +126,9 @@ do
 done
 
 if [[ -f "${ROOT_DIR}/deploy/xserver/public_html/index.php" ]]; then
+    echo "Template index.php first 20 lines:"
+    sed -n '1,20p' "${ROOT_DIR}/deploy/xserver/public_html/index.php" || true
+
     echo "Template laravelBasePath line:"
     grep -n '\$laravelBasePath' "${ROOT_DIR}/deploy/xserver/public_html/index.php" || true
 
@@ -176,6 +179,9 @@ if [[ -d "${BUILD_DIR}" ]]; then
     done
 
     if [[ -f "${BUILD_DIR}/public_html/index.php" ]]; then
+        echo "Generated public_html/index.php first 20 lines:"
+        sed -n '1,20p' "${BUILD_DIR}/public_html/index.php" || true
+
         echo "Generated public_html/index.php laravelBasePath line:"
         grep -n '\$laravelBasePath' "${BUILD_DIR}/public_html/index.php" || true
     fi
