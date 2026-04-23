@@ -27,6 +27,13 @@ jobs:
       DEPLOY_LARAVEL_BASE_PATH: ${{ vars.DEPLOY_LARAVEL_BASE_PATH }}
       FTP_LARAVEL_APP_DIR: ${{ vars.FTP_LARAVEL_APP_DIR }}
       FTP_PUBLIC_HTML_DIR: ${{ vars.FTP_PUBLIC_HTML_DIR }}
+      SSH_HOST: ${{ secrets.SSH_HOST || secrets.FTP_SERVER }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME || secrets.FTP_USERNAME }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ vars.SSH_PORT || '10022' }}
+      SSH_PHP_BIN: ${{ vars.SSH_PHP_BIN || 'php' }}
+      SSH_COMPOSER_BIN: ${{ vars.SSH_COMPOSER_BIN || 'composer' }}
+      RUN_MIGRATIONS: ${{ vars.RUN_MIGRATIONS || 'false' }}
 
     steps:
       - name: Checkout repository
@@ -43,6 +50,9 @@ jobs:
             DEPLOY_LARAVEL_BASE_PATH
             FTP_LARAVEL_APP_DIR
             FTP_PUBLIC_HTML_DIR
+            SSH_HOST
+            SSH_USERNAME
+            SSH_PRIVATE_KEY
           )
 
           for var_name in "${required_vars[@]}"; do
@@ -69,20 +79,16 @@ jobs:
             fi
           done
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.5"
-          coverage: none
+          if [[ "${RUN_MIGRATIONS}" != "true" && "${RUN_MIGRATIONS}" != "false" ]]; then
+            echo "::error::RUN_MIGRATIONS must be either true or false."
+            exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
-
-      - name: Install PHP dependencies
-        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
       - name: Install Node.js dependencies
         run: npm ci
@@ -107,7 +113,24 @@ jobs:
           local-dir: ./.deploy/laravel_app/
           server-dir: ${{ env.FTP_LARAVEL_APP_DIR }}
           state-name: .ftp-deploy-sync-state-laravel.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            vendor/**
+            **/vendor/**
+            .env
+            **/.env
+            .env.backup
+            **/.env.backup
+            .env.production
+            **/.env.production
+            storage/**
+            **/storage/**
           log-level: standard
+
+      - name: Install PHP dependencies on server
+        run: ./scripts/run-xserver-post-deploy.sh
 
       - name: Upload public_html
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
@@ -120,4 +143,10 @@ jobs:
           local-dir: ./.deploy/public_html/
           server-dir: ${{ env.FTP_PUBLIC_HTML_DIR }}
           state-name: .ftp-deploy-sync-state-public.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            storage/**
+            **/storage/**
           log-level: standard

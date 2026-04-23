@@ -56,6 +56,7 @@ rsync -a --delete \
     --exclude '.claude/' \
     --exclude '.deploy/' \
     --exclude 'node_modules/' \
+    --exclude 'vendor/' \
     --exclude 'tests/' \
     --exclude 'docs/' \
     --exclude 'docker/' \
@@ -64,6 +65,7 @@ rsync -a --delete \
     --exclude '.env.backup' \
     --exclude '.env.production' \
     --exclude 'public/storage' \
+    --exclude 'storage/' \
     "${ROOT_DIR}/" "${LARAVEL_DIR}/"
 
 rsync -a --delete \

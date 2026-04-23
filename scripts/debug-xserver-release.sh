@@ -138,13 +138,19 @@ fi
 end_section
 
 section "Build artifacts"
-for file_path in "vendor/autoload.php" "public/build/manifest.json"; do
+for file_path in "public/build/manifest.json"; do
     if [[ -e "${ROOT_DIR}/${file_path}" ]]; then
         echo "${file_path}: found"
     else
         echo "${file_path}: not found yet"
     fi
 done
+
+if [[ -e "${ROOT_DIR}/vendor/autoload.php" ]]; then
+    echo "vendor/autoload.php: found locally, but vendor/ is intentionally excluded from FTP upload"
+else
+    echo "vendor/autoload.php: not found locally; this is OK because composer install runs on the server"
+fi
 end_section
 
 section "Prepare release dry run"
@@ -167,7 +173,6 @@ if [[ -d "${BUILD_DIR}" ]]; then
     section "Generated bundle checks"
     for file_path in \
         "laravel_app/artisan" \
-        "laravel_app/vendor/autoload.php" \
         "public_html/index.php" \
         "public_html/.htaccess"
     do
@@ -177,6 +182,18 @@ if [[ -d "${BUILD_DIR}" ]]; then
             echo "${file_path}: missing"
         fi
     done
+
+    if [[ -d "${BUILD_DIR}/laravel_app/vendor" ]]; then
+        echo "laravel_app/vendor: unexpectedly found"
+    else
+        echo "laravel_app/vendor: intentionally excluded"
+    fi
+
+    if [[ -d "${BUILD_DIR}/laravel_app/storage" ]]; then
+        echo "laravel_app/storage: unexpectedly found"
+    else
+        echo "laravel_app/storage: intentionally excluded"
+    fi
 
     if [[ -f "${BUILD_DIR}/public_html/index.php" ]]; then
         echo "Generated public_html/index.php first 20 lines:"

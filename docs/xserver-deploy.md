@@ -63,6 +63,7 @@ php artisan optimize
 - Workflow: `.github/workflows/deploy-xserver-ftp.yml`
 - 配布準備スクリプト: `scripts/prepare-xserver-release.sh`
 - 診断スクリプト: `scripts/debug-xserver-release.sh`
+- サーバー側 post-deploy スクリプト: `scripts/run-xserver-post-deploy.sh`
 
 ### 6-1. GitHub 側で設定する値
 
@@ -73,6 +74,9 @@ Secrets:
 - `FTP_SERVER`: FTP ホスト名
 - `FTP_USERNAME`: FTP ユーザー名
 - `FTP_PASSWORD`: FTP パスワード
+- `SSH_PRIVATE_KEY`: Xserver に登録した公開鍵に対応する秘密鍵
+- `SSH_HOST`: 任意。未設定時は `FTP_SERVER` を使用
+- `SSH_USERNAME`: 任意。未設定時は `FTP_USERNAME` を使用
 
 Variables:
 
@@ -85,16 +89,21 @@ Variables:
 - `FTP_PORT`: 任意。未設定時は `21`
 - `FTP_PROTOCOL`: 任意。未設定時は `ftp`
   - `ftps` が使える契約なら `ftps` を推奨
+- `SSH_PORT`: 任意。未設定時は `10022`
+- `SSH_PHP_BIN`: 任意。未設定時は `php`
+- `SSH_COMPOSER_BIN`: 任意。未設定時は `composer`
+- `RUN_MIGRATIONS`: 任意。`true` の場合のみデプロイ時に `php artisan migrate --force` を実行。未設定時は `false`
 
 `environment: production` を指定しているため、必要であれば GitHub の Environment `production` にこれらを登録して保護ルールを付けられます。repo-level の Secrets / Variables でも動作します。
 
 ### 6-2. workflow の動き
 
 1. `main` への push で起動
-2. `composer install --no-dev` を実行
-3. `npm ci && npm run build` で Vite アセットを生成
-4. `.deploy/laravel_app` と `.deploy/public_html` を組み立て
-5. FTP でそれぞれのディレクトリに同期
+2. `npm ci && npm run build` で Vite アセットを生成
+3. `.deploy/laravel_app` と `.deploy/public_html` を組み立て
+4. `vendor/`, `.env`, `storage/` を除外して Laravel 本体を FTP 同期
+5. SSH でサーバーに接続し、Laravel 本体ディレクトリで `composer install --no-dev --optimize-autoloader` を実行
+6. `public_html` を FTP 同期
 
 `public_html` 側には以下が含まれます。
 
@@ -108,6 +117,16 @@ Variables:
 ### 6-3. 補足
 
 - `push` トリガーなので、Pull Request を `main` にマージした場合も自動で実行されます
-- DB マイグレーションや `php artisan optimize` は FTP だけでは実行できないため、必要時はサーバー側で別途実行してください
+- DB マイグレーションは `RUN_MIGRATIONS=true` にした場合だけ自動実行します。通常は安全のため `false` のままにしてください
 - `public/storage` はサーバー側の `php artisan storage:link` を維持する前提で、自動アップロード対象から外しています
 - GitHub Actions 上で失敗箇所が分かりにくい場合は、`Run deployment diagnostics` のログを確認してください。FTP パスワードなどは表示せず、変数・テンプレート・生成物の状態だけを出します
+
+### 6-4. Xserver の SSH 設定
+
+Xserver の SSH は公開鍵認証です。サーバーパネルの SSH 設定で公開鍵を登録し、対応する秘密鍵を GitHub Secret `SSH_PRIVATE_KEY` に登録してください。
+
+Xserver の SSH ポートは通常 `10022` です。違うポートを使う場合のみ `SSH_PORT` を変更してください。
+
+GitHub Actions から非対話で接続するため、`SSH_PRIVATE_KEY` にはパスフレーズなしのデプロイ用秘密鍵を登録してください。パスフレーズ付き鍵を使う場合は、別途 ssh-agent と passphrase 対応が必要です。
+
+GitHub Hosted Runner から SSH 接続する場合、Xserver 側で「国外IPアドレスからのアクセス制限」を有効にしていると接続できない可能性があります。その場合は、制限設定を見直すか、日本国内の self-hosted runner などから実行してください。
