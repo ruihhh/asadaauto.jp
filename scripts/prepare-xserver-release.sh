@@ -55,6 +55,8 @@ rsync -a --delete \
     --exclude '.github/' \
     --exclude '.claude/' \
     --exclude '.deploy/' \
+    --exclude '.deploy-debug/' \
+    --exclude '.deploy*/' \
     --exclude 'node_modules/' \
     --exclude 'vendor/' \
     --exclude 'tests/' \

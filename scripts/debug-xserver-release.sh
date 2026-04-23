@@ -3,7 +3,7 @@
 set -uo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${1:-${ROOT_DIR}/.deploy-debug}"
+BUILD_DIR="${1:-${RUNNER_TEMP:-/tmp}/asadaauto-deploy-debug}"
 
 section() {
     local title="$1"

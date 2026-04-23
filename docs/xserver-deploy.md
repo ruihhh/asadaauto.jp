@@ -119,7 +119,7 @@ Variables:
 - `push` トリガーなので、Pull Request を `main` にマージした場合も自動で実行されます
 - DB マイグレーションは `RUN_MIGRATIONS=true` にした場合だけ自動実行します。通常は安全のため `false` のままにしてください
 - `public/storage` はサーバー側の `php artisan storage:link` を維持する前提で、自動アップロード対象から外しています
-- GitHub Actions 上で失敗箇所が分かりにくい場合は、`Run deployment diagnostics` のログを確認してください。FTP パスワードなどは表示せず、変数・テンプレート・生成物の状態だけを出します
+- GitHub Actions 上で失敗箇所が分かりにくい場合は、`Run deployment diagnostics` のログを確認してください。FTP パスワードなどは表示せず、変数・テンプレート・生成物の状態だけを出します。診断用の生成物は runner の一時ディレクトリに作成し、FTP アップロード対象には含めません
 
 ### 6-4. Xserver の SSH 設定
 

@@ -97,7 +97,7 @@ jobs:
         run: npm run build
 
       - name: Run deployment diagnostics
-        run: ./scripts/debug-xserver-release.sh
+        run: ./scripts/debug-xserver-release.sh "${RUNNER_TEMP}/asadaauto-deploy-debug"
 
       - name: Prepare Xserver release bundle
         run: ./scripts/prepare-xserver-release.sh
@@ -116,6 +116,10 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            .deploy/**
+            .deploy-debug/**
+            **/.deploy/**
+            **/.deploy-debug/**
             **/node_modules/**
             vendor/**
             **/vendor/**
@@ -146,6 +150,10 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            .deploy/**
+            .deploy-debug/**
+            **/.deploy/**
+            **/.deploy-debug/**
             **/node_modules/**
             storage/**
             **/storage/**
