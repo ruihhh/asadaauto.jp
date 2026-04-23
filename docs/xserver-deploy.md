@@ -86,6 +86,7 @@ Variables:
   - 例: `/home/<account>/laravel_app/`
 - `FTP_PUBLIC_HTML_DIR`: 公開ディレクトリアップロード先
   - 例: `/home/<account>/<domain>/public_html/`
+  - この環境では `public_html/b-2026.asadaauto.jp/`
 - `FTP_PORT`: 任意。未設定時は `21`
 - `FTP_PROTOCOL`: 任意。未設定時は `ftp`
   - `ftps` が使える契約なら `ftps` を推奨
@@ -102,8 +103,8 @@ Variables:
 2. `npm ci && npm run build` で Vite アセットを生成
 3. `.deploy/laravel_app` と `.deploy/public_html` を組み立て
 4. `vendor/`, `.env`, `storage/` を除外して Laravel 本体を FTP 同期
-5. SSH でサーバーに接続し、Laravel 本体ディレクトリで `composer install --no-dev --optimize-autoloader` を実行
-6. `public_html` を FTP 同期
+5. `public_html` を FTP 同期
+6. SSH でサーバーに接続し、Laravel 本体ディレクトリで `composer install --no-dev --optimize-autoloader` を実行
 
 `public_html` 側には以下が含まれます。
 
@@ -113,6 +114,8 @@ Variables:
 - `deploy/xserver/public_html/.htaccess`
 
 その際、`index.php` 内の `$laravelBasePath` は `DEPLOY_LARAVEL_BASE_PATH` の値で自動置換されます。
+
+`laravel_app/public` も Laravel 本体側に残します。これは公開用ではなく、Laravel の Vite ヘルパーが `public/build/manifest.json` を参照するために必要です。実際にブラウザから公開されるファイルは `FTP_PUBLIC_HTML_DIR` 側にアップロードされます。
 
 ### 6-3. 補足
 

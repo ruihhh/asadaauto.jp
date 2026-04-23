@@ -54,6 +54,7 @@ rsync -a --delete \
     --exclude '.git/' \
     --exclude '.github/' \
     --exclude '.claude/' \
+    --exclude '.DS_Store' \
     --exclude '.deploy/' \
     --exclude '.deploy-debug/' \
     --exclude '.deploy*/' \
@@ -71,6 +72,7 @@ rsync -a --delete \
     "${ROOT_DIR}/" "${LARAVEL_DIR}/"
 
 rsync -a --delete \
+    --exclude '.DS_Store' \
     --exclude 'storage' \
     "${ROOT_DIR}/public/" "${PUBLIC_DIR}/"
 

@@ -79,6 +79,11 @@ jobs:
             fi
           done
 
+          if [[ "${FTP_PUBLIC_HTML_DIR}" == "public/" ]]; then
+            echo "::error::FTP_PUBLIC_HTML_DIR is public/. For this Xserver deployment, use public_html/b-2026.asadaauto.jp/."
+            exit 1
+          fi
+
           if [[ "${RUN_MIGRATIONS}" != "true" && "${RUN_MIGRATIONS}" != "false" ]]; then
             echo "::error::RUN_MIGRATIONS must be either true or false."
             exit 1
@@ -102,6 +107,15 @@ jobs:
       - name: Prepare Xserver release bundle
         run: ./scripts/prepare-xserver-release.sh
 
+      - name: Show upload targets
+        run: |
+          set -euo pipefail
+
+          echo "Laravel app FTP target: ${FTP_LARAVEL_APP_DIR}"
+          echo "public_html FTP target: ${FTP_PUBLIC_HTML_DIR}"
+          echo "Generated public_html files:"
+          find ./.deploy/public_html -maxdepth 2 -type f | sort
+
       - name: Upload Laravel application
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
@@ -116,6 +130,7 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            **/.DS_Store
             .deploy/**
             .deploy-debug/**
             **/.deploy/**
@@ -133,9 +148,6 @@ jobs:
             **/storage/**
           log-level: standard
 
-      - name: Install PHP dependencies on server
-        run: ./scripts/run-xserver-post-deploy.sh
-
       - name: Upload public_html
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
@@ -150,6 +162,7 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            **/.DS_Store
             .deploy/**
             .deploy-debug/**
             **/.deploy/**
@@ -158,3 +171,6 @@ jobs:
             storage/**
             **/storage/**
           log-level: standard
+
+      - name: Install PHP dependencies on server
+        run: ./scripts/run-xserver-post-deploy.sh
