@@ -58,8 +58,12 @@ class CarController extends Controller
 
         $publicInventory = Car::query()->publicInventory();
 
+        // sort=latest が URL に明示されているときだけ「新着車両」ページと判定
+        $isLatest = $request->query('sort') === 'latest';
+
         return view('cars.index', [
             'cars' => $cars,
+            'isLatest' => $isLatest,
             'filters' => [
                 'q' => $keyword,
                 'make' => (string) $request->query('make', ''),

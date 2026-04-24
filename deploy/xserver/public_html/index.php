@@ -12,7 +12,17 @@ if (file_exists($maintenance = $laravelBasePath.'/storage/framework/maintenance.
     require $maintenance;
 }
 
-require $laravelBasePath.'/vendor/autoload.php';
+$autoloadPath = $laravelBasePath.'/vendor/autoload.php';
+
+if (! is_file($autoloadPath)) {
+    error_log('Laravel autoload file is missing: '.$autoloadPath);
+    http_response_code(503);
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo 'Service temporarily unavailable.';
+    exit;
+}
+
+require $autoloadPath;
 
 /** @var Application $app */
 $app = require_once $laravelBasePath.'/bootstrap/app.php';

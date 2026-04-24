@@ -1,21 +1,29 @@
 @extends('layouts.site')
 
 @php
+    // $isLatest はコントローラーから渡される（sort=latest が URL に明示されているとき true）
     $hasFilter = collect($filters)->filter(fn($v) => $v !== '' && $v !== null)->except('sort')->isNotEmpty();
     $makeLabel = $filters['make'] ? $filters['make'] . 'の' : '';
     $bodyLabel = $filters['body_type'] ? $filters['body_type'] . 'の' : '';
+    $allCars   = $cars->getCollection(); // ページネーター内コレクション（featured用）
 @endphp
 
-@section('title', $hasFilter
-    ? ($makeLabel . $bodyLabel . '中古車在庫一覧｜尼崎・兵庫')
-    : '尼崎の中古車在庫一覧｜兵庫県（' . $cars->total() . '台掲載中）')
-@section('meta_description', $hasFilter
-    ? ('【尼崎・兵庫の中古車】' . $makeLabel . $bodyLabel . '中古車 ' . $cars->total() . '台掲載中。兵庫県尼崎市のアサダオートサポート。')
-    : '【尼崎の中古車】兵庫県尼崎市のアサダオートサポートが' . $cars->total() . '台掲載中。軽自動車・SUV・ミニバンなどメーカー・価格帯・走行距離で絞り込み検索。')
+@if($isLatest)
+    @section('title', '新着中古車情報｜尼崎・兵庫の最新入荷（' . $cars->total() . '台）')
+    @section('meta_description', '【新着入荷情報】尼崎市アサダオートサポートの最新中古車入荷情報。' . $cars->total() . '台掲載中。人気車は数日で売約済みになります。気になる車はお早めに。')
+@else
+    @section('title', $hasFilter
+        ? ($makeLabel . $bodyLabel . '中古車在庫一覧｜尼崎・兵庫')
+        : '尼崎の中古車在庫一覧｜兵庫県（' . $cars->total() . '台掲載中）')
+    @section('meta_description', $hasFilter
+        ? ('【尼崎・兵庫の中古車】' . $makeLabel . $bodyLabel . '中古車 ' . $cars->total() . '台掲載中。兵庫県尼崎市のアサダオートサポート。')
+        : '【尼崎の中古車】兵庫県尼崎市のアサダオートサポートが' . $cars->total() . '台掲載中。軽自動車・SUV・ミニバンなどメーカー・価格帯・走行距離で絞り込み検索。')
+@endif
+
 @if($hasFilter || $cars->currentPage() > 1)
 @section('meta_robots', 'noindex, follow')
 @endif
-@section('canonical', route('cars.index'))
+@section('canonical', $isLatest ? route('cars.index', ['sort' => 'latest']) : route('cars.index'))
 
 @section('structured_data')
 <script type="application/ld+json">
@@ -24,11 +32,15 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
         {"@type":"ListItem","position":1,"name":"ホーム","item":"{{ url('/') }}"},
+        @if($isLatest)
+        {"@type":"ListItem","position":2,"name":"新着車両","item":"{{ route('cars.index', ['sort' => 'latest']) }}"}
+        @else
         {"@type":"ListItem","position":2,"name":"中古車在庫一覧","item":"{{ route('cars.index') }}"}
+        @endif
     ]
 }
 </script>
-@if(!$hasFilter)
+@if(!$hasFilter && !$isLatest)
 <script type="application/ld+json">
 {
     "@@context": "https://schema.org",
@@ -54,10 +66,37 @@
 
 @section('content')
 
-{{-- ヒーローバナー + 検索 --}}
+{{-- ════════════════════════════════════════════════════════════ --}}
+{{--  ヒーローバナー                                               --}}
+{{-- ════════════════════════════════════════════════════════════ --}}
 <section class="hero">
     <div class="container">
         <div class="hero-inner">
+
+            @if($isLatest)
+            {{-- ── 新着車両 ヒーロー ─────────────────────────────── --}}
+            <p class="hero-eyebrow">🆕 最新入荷情報</p>
+            <h1 class="hero-title">新着中古車<span>入荷情報</span></h1>
+            <p class="hero-subtitle">気になる車はお早めに ― 人気車は数日で売約済みになります</p>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <span class="hero-stat-val">{{ number_format($cars->total()) }}</span>
+                    <span class="hero-stat-lbl">台 掲載中</span>
+                </div>
+                <div class="hero-stat-sep"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-val">随時</span>
+                    <span class="hero-stat-lbl">入荷更新</span>
+                </div>
+                <div class="hero-stat-sep"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-val">即日</span>
+                    <span class="hero-stat-lbl">来店可</span>
+                </div>
+            </div>
+
+            @else
+            {{-- ── 在庫一覧 ヒーロー ─────────────────────────────── --}}
             <p class="hero-eyebrow">兵庫県尼崎市の中古車販売店</p>
             <h1 class="hero-title">
                 @if(!$hasFilter)
@@ -123,9 +162,167 @@
                     <button type="submit" class="hero-search-btn">検索する</button>
                 </form>
             </div>
+            @endif
+
         </div>
     </div>
 </section>
+
+
+{{-- ════════════════════════════════════════════════════════════ --}}
+{{--  ── 新着車両 専用セクション ──────────────────────────────── --}}
+{{-- ════════════════════════════════════════════════════════════ --}}
+@if($isLatest)
+
+{{-- 緊急性バナー --}}
+<div class="new-urgency-bar">
+    <div class="container">
+        <div class="new-urgency-inner">
+            <span class="new-urgency-icon">⚡</span>
+            <p class="new-urgency-text">
+                人気車両は公開後 <strong>数日以内</strong> に売約済みになることがあります。
+                気になる車はお早めにお問い合わせください。
+            </p>
+            <a href="{{ route('contact.index') }}" class="new-urgency-btn">今すぐ問い合わせ</a>
+        </div>
+    </div>
+</div>
+
+{{-- 注目の新着 フィーチャーカード --}}
+@if($allCars->isNotEmpty())
+<section class="new-featured-section">
+    <div class="container">
+        <div class="new-featured-header">
+            <h2 class="new-featured-title">
+                <span class="new-featured-badge">NEW</span>
+                注目の新着車両
+            </h2>
+            <p class="new-featured-sub">最新入荷車両をピックアップ。詳細は各車両ページでご確認ください。</p>
+        </div>
+        <div class="new-featured-grid">
+            @foreach($allCars->take(3) as $car)
+            <article class="new-featured-card">
+                <a href="{{ route('cars.show', $car) }}" class="new-featured-card-link">
+                    <div class="new-featured-img-wrap">
+                        @if($car->image_path)
+                            <img src="{{ '/images/' . $car->image_path }}"
+                                 alt="{{ $car->make }} {{ $car->model }}"
+                                 loading="lazy">
+                        @else
+                            <div class="car-no-image">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/><path d="M21 17h-2"/><path d="M13 3H5l-2 4v10h18V7l-2-4h-6z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+                                <span>No Image</span>
+                            </div>
+                        @endif
+                        <span class="new-fc-badge-new">NEW</span>
+                        @if($car->featured)
+                            <span class="new-fc-badge-pick">注目</span>
+                        @endif
+                        @if($car->status !== 'available')
+                            <span class="new-fc-badge-sold">{{ match($car->status) { 'reserved' => '商談中', 'sold' => '売約済', default => $car->status } }}</span>
+                        @endif
+                    </div>
+                    <div class="new-featured-body">
+                        <p class="new-fc-no">No. {{ $car->stock_no }}</p>
+                        <h3 class="new-fc-name">{{ $car->make }} {{ $car->model }}</h3>
+                        @if($car->grade && $car->grade !== '—')
+                            <p class="new-fc-grade">{{ $car->grade }}</p>
+                        @endif
+                        <div class="new-fc-specs">
+                            <span>{{ $car->model_year }}年式</span>
+                            <span>{{ number_format($car->mileage) }} km</span>
+                            <span>{{ $car->body_type }}</span>
+                            <span>{{ $car->transmission }}</span>
+                        </div>
+                        <div class="new-fc-price">
+                            <span class="new-fc-price-label">総額</span>
+                            <span class="new-fc-price-val">{{ number_format($car->price) }}</span>
+                            <span class="new-fc-price-unit">円</span>
+                        </div>
+                        <span class="new-fc-cta">詳しく見る →</span>
+                    </div>
+                </a>
+            </article>
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
+{{-- 入荷サイクル情報バー --}}
+<div class="new-cycle-bar">
+    <div class="container">
+        <div class="new-cycle-inner">
+            <div class="new-cycle-item">
+                <span class="new-cycle-icon">🚗</span>
+                <div>
+                    <p class="new-cycle-ttl">随時入荷</p>
+                    <p class="new-cycle-txt">新しい車両は随時入荷しています</p>
+                </div>
+            </div>
+            <div class="new-cycle-sep"></div>
+            <div class="new-cycle-item">
+                <span class="new-cycle-icon">📸</span>
+                <div>
+                    <p class="new-cycle-ttl">入荷後即掲載</p>
+                    <p class="new-cycle-txt">入荷後すぐにサイトを更新</p>
+                </div>
+            </div>
+            <div class="new-cycle-sep"></div>
+            <div class="new-cycle-item">
+                <span class="new-cycle-icon">⚡</span>
+                <div>
+                    <p class="new-cycle-ttl">早い者勝ち</p>
+                    <p class="new-cycle-txt">人気車は早期売約済みに</p>
+                </div>
+            </div>
+            <div class="new-cycle-sep"></div>
+            <div class="new-cycle-item">
+                <span class="new-cycle-icon">📞</span>
+                <div>
+                    <p class="new-cycle-ttl">取り置き対応</p>
+                    <p class="new-cycle-txt">お問い合わせで仮押さえ可</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{{-- ════════════════════════════════════════════════════════════ --}}
+{{--  ── 在庫一覧 専用セクション ──────────────────────────────── --}}
+{{-- ════════════════════════════════════════════════════════════ --}}
+@else
+
+{{-- クイックフィルター チップス --}}
+@if(!$hasFilter)
+<div class="quick-filter-bar">
+    <div class="container">
+        <div class="quick-filter-inner">
+            <div class="quick-filter-group">
+                <span class="quick-filter-label">ボディタイプ</span>
+                <div class="quick-filter-chips">
+                    <a href="{{ route('cars.index', ['body_type' => 'SUV']) }}" class="quick-chip">🚙 SUV</a>
+                    <a href="{{ route('cars.index', ['body_type' => 'ミニバン']) }}" class="quick-chip">🚐 ミニバン</a>
+                    <a href="{{ route('cars.index', ['body_type' => 'セダン']) }}" class="quick-chip">🚗 セダン</a>
+                    <a href="{{ route('cars.index', ['body_type' => 'ハッチバック']) }}" class="quick-chip">🚘 ハッチバック</a>
+                    <a href="{{ route('cars.index', ['body_type' => '軽自動車']) }}" class="quick-chip">🔹 軽自動車</a>
+                    <a href="{{ route('cars.index', ['body_type' => 'ワゴン']) }}" class="quick-chip">🚌 ワゴン</a>
+                </div>
+            </div>
+            <div class="quick-filter-group">
+                <span class="quick-filter-label">価格帯</span>
+                <div class="quick-filter-chips">
+                    <a href="{{ route('cars.index', ['max_price' => 1000000]) }}" class="quick-chip">〜100万円</a>
+                    <a href="{{ route('cars.index', ['min_price' => 1000000, 'max_price' => 2000000]) }}" class="quick-chip">100〜200万円</a>
+                    <a href="{{ route('cars.index', ['min_price' => 2000000, 'max_price' => 3000000]) }}" class="quick-chip">200〜300万円</a>
+                    <a href="{{ route('cars.index', ['min_price' => 3000000]) }}" class="quick-chip">300万円〜</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- SEO イントロテキスト（フィルターなし時のみ） --}}
 @if(!$hasFilter && $cars->currentPage() === 1)
@@ -136,7 +333,12 @@
 </div>
 @endif
 
-{{-- メインコンテンツ --}}
+@endif {{-- /isLatest --}}
+
+
+{{-- ════════════════════════════════════════════════════════════ --}}
+{{--  メインコンテンツ（共通）                                     --}}
+{{-- ════════════════════════════════════════════════════════════ --}}
 <div class="container" style="padding-top:28px;padding-bottom:40px;" x-data>
 
     {{-- 絞り込みパネル --}}
@@ -145,12 +347,16 @@
             <span>詳細絞り込み</span>
             <svg class="filter-toggle-icon" :class="open && 'rotated'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <form x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" method="get" action="{{ route('cars.index') }}" class="filter-form" style="padding-top:16px;border-top:1px solid var(--line-light);margin-top:14px;">
+        <form x-show="open"
+              x-transition:enter="transition ease-out duration-200"
+              x-transition:enter-start="opacity-0 -translate-y-2"
+              x-transition:enter-end="opacity-100 translate-y-0"
+              method="get" action="{{ route('cars.index') }}" class="filter-form"
+              style="padding-top:16px;border-top:1px solid var(--line-light);margin-top:14px;">
             <label>
                 キーワード
                 <input type="text" name="q" value="{{ $filters['q'] }}" placeholder="車種 / グレード / 管理番号">
             </label>
-
             <label>
                 メーカー
                 <select name="make">
@@ -160,7 +366,6 @@
                     @endforeach
                 </select>
             </label>
-
             <label>
                 ボディタイプ
                 <select name="body_type">
@@ -170,22 +375,18 @@
                     @endforeach
                 </select>
             </label>
-
             <label>
                 最低価格(円)
                 <input type="number" min="0" name="min_price" value="{{ $filters['min_price'] }}" placeholder="例: 500000">
             </label>
-
             <label>
                 最高価格(円)
                 <input type="number" min="0" name="max_price" value="{{ $filters['max_price'] }}" placeholder="例: 3000000">
             </label>
-
             <label>
                 最大走行距離(km)
                 <input type="number" min="0" name="max_mileage" value="{{ $filters['max_mileage'] }}" placeholder="例: 50000">
             </label>
-
             <label>
                 並び順
                 <select name="sort">
@@ -196,18 +397,20 @@
                     <option value="year_desc"   @selected($filters['sort'] === 'year_desc')>年式が新しい順</option>
                 </select>
             </label>
-
             <div class="filter-actions">
                 <button type="submit">絞り込む</button>
-                <a href="{{ route('cars.index') }}">リセット</a>
+                <a href="{{ $isLatest ? route('cars.index', ['sort' => 'latest']) : route('cars.index') }}">リセット</a>
             </div>
         </form>
     </div>
 
-
     {{-- 一覧ヘッダー --}}
     <div class="inventory-head">
-        <h2>在庫一覧</h2>
+        @if($isLatest)
+            <h2>すべての新着車両</h2>
+        @else
+            <h2>在庫一覧</h2>
+        @endif
         <p>{{ number_format($cars->total()) }} 台</p>
     </div>
 
@@ -227,7 +430,6 @@
                                 <span>No Image</span>
                             </div>
                         @endif
-                        {{-- バッジ --}}
                         <div class="car-card-badges">
                             @if($car->featured)
                                 <span class="badge-featured">注目</span>
@@ -236,7 +438,6 @@
                                 <span class="badge-new">NEW</span>
                             @endif
                         </div>
-                        {{-- 価格オーバーレイ --}}
                         <div class="car-card-image-footer">
                             @if($car->status !== 'available')
                                 <span class="car-card-status">{{ match($car->status) { 'reserved' => '商談中', 'sold' => '売約済', default => $car->status } }}</span>
@@ -264,7 +465,6 @@
                     </div>
                 </a>
 
-                {{-- カード下部アクション --}}
                 <div class="car-card-actions" x-data="favBtn({{ $car->id }})">
                     <button @click="toggle"
                             class="card-action-btn fav-btn"
@@ -296,9 +496,7 @@
             @else
                 <a href="{{ $cars->previousPageUrl() }}">前へ</a>
             @endif
-
             <span>{{ $cars->currentPage() }} / {{ $cars->lastPage() }} ページ</span>
-
             @if ($cars->hasMorePages())
                 <a href="{{ $cars->nextPageUrl() }}">次へ</a>
             @else
@@ -324,6 +522,79 @@
         </div>
     </div>
 </div>
+
+
+{{-- ════════════════════════════════════════════════════════════ --}}
+{{--  ページ固有フッターCTA                                        --}}
+{{-- ════════════════════════════════════════════════════════════ --}}
+@if($isLatest)
+
+{{-- 新着: 入荷希望・通知CTA --}}
+<section class="new-notify-section">
+    <div class="container">
+        <div class="new-notify-inner">
+            <div class="new-notify-text">
+                <h2 class="new-notify-title">お目当ての車が見つからない方へ</h2>
+                <p class="new-notify-sub">
+                    ご希望の車種・グレード・予算をお伝えいただければ、<strong>入荷次第ご連絡</strong>します。
+                    お気軽にご相談ください。
+                </p>
+            </div>
+            <div class="new-notify-actions">
+                <a href="{{ route('contact.index') }}" class="btn-primary new-notify-btn">
+                    ✉ 入荷希望を伝える
+                </a>
+                <a href="tel:06-4960-8765" class="new-notify-tel">
+                    <span>📞</span>
+                    <span>06-4960-8765</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@else
+
+{{-- 在庫一覧: クルマ選び相談CTA --}}
+<section class="advisor-cta-section">
+    <div class="container">
+        <h2 class="advisor-cta-title">どんなクルマが合うか迷ったら</h2>
+        <p class="advisor-cta-sub">用途・予算・ライフスタイルに合ったクルマ選びをスタッフがサポートします。</p>
+        <div class="advisor-use-grid">
+            <div class="advisor-use-card">
+                <span class="advisor-use-icon">👨‍👩‍👧‍👦</span>
+                <p class="advisor-use-name">ファミリー向け</p>
+                <p class="advisor-use-type">ミニバン・ワゴン</p>
+                <a href="{{ route('cars.index', ['body_type' => 'ミニバン']) }}" class="advisor-use-link">在庫を見る →</a>
+            </div>
+            <div class="advisor-use-card">
+                <span class="advisor-use-icon">⛽</span>
+                <p class="advisor-use-name">燃費を重視</p>
+                <p class="advisor-use-type">ハイブリッド・コンパクト</p>
+                <a href="{{ route('cars.index', ['body_type' => 'ハッチバック']) }}" class="advisor-use-link">在庫を見る →</a>
+            </div>
+            <div class="advisor-use-card">
+                <span class="advisor-use-icon">🏔</span>
+                <p class="advisor-use-name">アウトドア・趣味</p>
+                <p class="advisor-use-type">SUV・クロスオーバー</p>
+                <a href="{{ route('cars.index', ['body_type' => 'SUV']) }}" class="advisor-use-link">在庫を見る →</a>
+            </div>
+            <div class="advisor-use-card">
+                <span class="advisor-use-icon">💰</span>
+                <p class="advisor-use-name">予算を抑えたい</p>
+                <p class="advisor-use-type">軽自動車・コンパクト</p>
+                <a href="{{ route('cars.index', ['body_type' => '軽自動車']) }}" class="advisor-use-link">在庫を見る →</a>
+            </div>
+        </div>
+        <div class="advisor-cta-consult">
+            <p>上記以外でも、<strong>「こんな車が欲しい」</strong>というご希望があればお気軽にご相談ください。</p>
+            <a href="{{ route('contact.index') }}" class="btn-primary advisor-consult-btn">✉ スタッフに相談する</a>
+        </div>
+    </div>
+</section>
+
+@endif
+
 
 <script>
 document.addEventListener('alpine:init', () => {
