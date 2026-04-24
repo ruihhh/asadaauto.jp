@@ -11,10 +11,17 @@
         </div>
     </x-slot>
 
+    {{-- ページ固有データを window 変数へ（HTML属性内の@jsonを避けるため） --}}
+    <script>
+        window.__carCreate = {
+            masterData: @json($masterData),
+        };
+    </script>
+
     <div class="py-8">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
             <form action="{{ route('admin.cars.store') }}" method="POST" enctype="multipart/form-data"
-                  x-data="carMasterForm('', '', '', @json($masterData))"
+                  x-data="carMasterForm()"
                   id="car-form">
                 @csrf
 
@@ -289,12 +296,13 @@
 
 @push('scripts')
 <script>
-function carMasterForm(initialMake, initialModel, initialGrade, masterData) {
+function carMasterForm() {
+    const d = window.__carCreate;
     return {
-        make: initialMake,
-        model: initialModel,
-        grade: initialGrade,
-        masterData: masterData,
+        make: '',
+        model: '',
+        grade: '',
+        masterData: d.masterData ?? { makes: [], models: {}, grades: {} },
         get filteredModels() {
             return this.masterData.models[this.make] ?? [];
         },

@@ -274,119 +274,43 @@
             <h2 class="section-heading">ボディタイプから探す</h2>
         </div>
         <div class="body-type-grid">
-            {{-- 軽自動車: 高くて四角いボックス型 --}}
             <a href="{{ route('cars.index', ['body_type' => '軽自動車']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 33 L6 13 L42 13 L42 33"/>
-                        <path d="M0 33 L6 33 M18 33 L30 33 M42 33 L48 33"/>
-                        <path d="M8 13 L8 25 L40 25 L40 13"/>
-                        <line x1="24" y1="13" x2="24" y2="25"/>
-                        <circle cx="12" cy="39" r="6"/>
-                        <circle cx="36" cy="39" r="6"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/kei.svg')) !!}</div>
                 <div class="body-type-name">軽自動車</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->get('軽自動車', 0) }}台</div>
             </a>
-            {{-- コンパクト: 小さめ・前後に丸みのあるハッチバック --}}
             <a href="{{ route('cars.index', ['body_type' => 'コンパクトカー']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 33 L4 28 L8 28 L14 18 L32 18 L40 26 L44 33"/>
-                        <path d="M0 33 L4 33 M17 33 L31 33 M44 33 L48 33"/>
-                        <path d="M11 28 L14 18 L32 18 L40 26 L11 24"/>
-                        <line x1="23" y1="18" x2="23" y2="24"/>
-                        <circle cx="12" cy="39" r="6"/>
-                        <circle cx="36" cy="39" r="6"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/compact.svg')) !!}</div>
                 <div class="body-type-name">コンパクト</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'コンパクト'))->sum() }}台</div>
             </a>
-            {{-- ミニバン: 背が高く長い・3列シート感 --}}
             <a href="{{ route('cars.index', ['body_type' => 'ミニバン']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 33 L4 9 L6 9 L42 9 L42 33"/>
-                        <path d="M0 33 L4 33 M14 33 L34 33 M42 33 L48 33"/>
-                        <path d="M5 9 L5 25 L41 25 L41 9"/>
-                        <line x1="17" y1="9" x2="17" y2="25"/>
-                        <line x1="30" y1="9" x2="30" y2="25"/>
-                        <circle cx="10" cy="39" r="6.5"/>
-                        <circle cx="38" cy="39" r="6.5"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/minivan.svg')) !!}</div>
                 <div class="body-type-name">ミニバン</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'ミニバン'))->sum() }}台</div>
             </a>
-            {{-- SUV: 地上高が高く大きなタイヤ --}}
             <a href="{{ route('cars.index', ['body_type' => 'SUV']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 30 L4 11 Q5 9 8 9 L40 9 Q43 9 44 11 L44 30"/>
-                        <path d="M0 30 L4 30 M18 30 L30 30 M44 30 L48 30"/>
-                        <path d="M8 9 L8 22 L40 22 L40 9"/>
-                        <line x1="24" y1="9" x2="24" y2="22"/>
-                        <circle cx="12" cy="38" r="7.5"/>
-                        <circle cx="36" cy="38" r="7.5"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/suv.svg')) !!}</div>
                 <div class="body-type-name">SUV・四駆</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'SUV') || str_contains($k,'クロカン'))->sum() }}台</div>
             </a>
-            {{-- セダン: ノッチバック3ボックス --}}
             <a href="{{ route('cars.index', ['body_type' => 'セダン']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 33 L2 29 L8 29 L14 21 L18 15 L30 15 L34 21 L40 21 L44 29 L44 33"/>
-                        <path d="M0 33 L2 33 M16 33 L32 33 M44 33 L48 33"/>
-                        <path d="M14 21 L18 15 L30 15 L34 21 Z"/>
-                        <circle cx="12" cy="39" r="6"/>
-                        <circle cx="36" cy="39" r="6"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/sedan.svg')) !!}</div>
                 <div class="body-type-name">セダン</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'セダン'))->sum() }}台</div>
             </a>
-            {{-- ハッチバック: リアが急傾斜 --}}
             <a href="{{ route('cars.index', ['body_type' => 'ハッチバック']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 33 L4 29 L8 29 L13 18 L34 17 L42 26 L44 33"/>
-                        <path d="M0 33 L4 33 M16 33 L32 33 M44 33 L48 33"/>
-                        <path d="M10 29 L13 18 L34 17 L42 26 L10 24"/>
-                        <line x1="22" y1="17" x2="22" y2="24"/>
-                        <circle cx="12" cy="39" r="6"/>
-                        <circle cx="36" cy="39" r="6"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/hatchback.svg')) !!}</div>
                 <div class="body-type-name">ハッチバック</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'ハッチ'))->sum() }}台</div>
             </a>
-            {{-- スポーツ: ロー&ワイド、流麗なシルエット --}}
             <a href="{{ route('cars.index', ['body_type' => 'スポーツ']) }}" class="body-type-card body-type-sport">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 34 L4 30 L10 30 L16 24 L20 20 L28 19 L36 19 L42 24 L46 30 L46 34"/>
-                        <path d="M0 34 L2 34 M16 34 L32 34 M46 34 L48 34"/>
-                        <path d="M16 24 L20 20 L36 19 L42 24 L42 29 L14 29 Z"/>
-                        <circle cx="12" cy="39" r="6"/>
-                        <circle cx="36" cy="39" r="6"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/sports.svg')) !!}</div>
                 <div class="body-type-name">スポーツ</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'スポーツ') || str_contains($k,'クーペ'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index') }}" class="body-type-card body-type-card-all">
-                <div class="body-type-icon-wrap">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="6" y="8" width="36" height="32" rx="3"/>
-                        <line x1="6" y1="18" x2="42" y2="18"/>
-                        <line x1="6" y1="28" x2="42" y2="28"/>
-                        <line x1="18" y1="8" x2="18" y2="40"/>
-                    </svg>
-                </div>
+                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/all.svg')) !!}</div>
                 <div class="body-type-name">すべて見る</div>
                 <div class="body-type-count">{{ number_format($totalPublic) }}台</div>
             </a>
