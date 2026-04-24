@@ -129,6 +129,27 @@ require_command() {
     fi
 }
 
+require_writable_dir() {
+    local directory="$1"
+    local test_file
+
+    mkdir -p "${directory}"
+
+    if [[ ! -d "${directory}" ]]; then
+        echo "[post-deploy] required directory could not be created: ${directory}" >&2
+        exit 1
+    fi
+
+    test_file="${directory}/.deploy-write-test-$$"
+
+    if ! touch "${test_file}" 2>/dev/null; then
+        echo "[post-deploy] required directory is not writable: ${directory}" >&2
+        exit 1
+    fi
+
+    rm -f "${test_file}"
+}
+
 cd "${DEPLOY_LARAVEL_BASE_PATH}"
 log "Working directory: $(pwd)"
 
@@ -144,7 +165,7 @@ log "PHP: $("${SSH_PHP_BIN}" -r 'echo PHP_VERSION;' 2>/dev/null)"
 log "Composer: $("${SSH_COMPOSER_BIN}" --version --no-interaction 2>/dev/null)"
 
 log "Ensuring Laravel writable directories exist."
-mkdir -p \
+for writable_dir in \
     bootstrap/cache \
     storage/app/public \
     storage/framework/cache/data \
@@ -152,9 +173,47 @@ mkdir -p \
     storage/framework/testing \
     storage/framework/views \
     storage/logs
+do
+    require_writable_dir "${writable_dir}"
+done
 
 if [[ ! -f .env ]]; then
-    echo "WARNING: .env was not found. Create it on the server before serving the app." >&2
+    echo "[post-deploy] .env was not found. Copy .env.xserver.example to .env on the server, configure production values, run php artisan key:generate --force, then rerun deploy." >&2
+    exit 1
+fi
+
+app_key="$(sed -n 's/^[[:space:]]*APP_KEY[[:space:]]*=[[:space:]]*//p' .env | tail -n 1)"
+app_key="${app_key%$'\r'}"
+
+if [[ -z "${app_key}" || "${app_key}" == '""' || "${app_key}" == "''" ]]; then
+    echo "[post-deploy] APP_KEY is empty in .env. Run: cd ${DEPLOY_LARAVEL_BASE_PATH} && ${SSH_PHP_BIN} artisan key:generate --force" >&2
+    exit 1
+fi
+
+if ! APP_KEY_VALUE="${app_key}" "${SSH_PHP_BIN}" -r '
+$key = trim((string) getenv("APP_KEY_VALUE"));
+
+if (
+    strlen($key) >= 2
+    && (($key[0] === "\"" && substr($key, -1) === "\"") || ($key[0] === "'"'"'" && substr($key, -1) === "'"'"'"))
+) {
+    $key = substr($key, 1, -1);
+}
+
+if (str_starts_with($key, "base64:")) {
+    $decoded = base64_decode(substr($key, 7), true);
+
+    if ($decoded === false) {
+        exit(2);
+    }
+
+    $key = $decoded;
+}
+
+exit(strlen($key) === 32 ? 0 : 3);
+'; then
+    echo "[post-deploy] APP_KEY in .env is not valid for AES-256-CBC. Run: cd ${DEPLOY_LARAVEL_BASE_PATH} && ${SSH_PHP_BIN} artisan key:generate --force" >&2
+    exit 1
 fi
 
 log "Installing PHP dependencies."

@@ -4,22 +4,23 @@
 
 Xserver共有レンタルサーバーでは、アプリ本体をWeb公開領域の外に置く構成が安全です。
 
-- Laravel本体: `/home/<account>/laravel_app`
-- Web公開領域: `/home/<account>/<domain>/public_html`
+- Laravel本体: `/home/<account>/<domain>/laravel_app`
+- サブドメイン公開領域: `/home/<account>/<domain>/public_html/b-2026.asadaauto.jp`
+- 旧 FuelPHP 公開領域: `/home/<account>/<domain>/public_html`
 
-`public_html`にはこのリポジトリの `deploy/xserver/public_html` 配下を置きます。
+この環境では `/home/<account>/<domain>/public_html` で旧 FuelPHP サイトが動いているため、Laravel の公開ファイルは必ず `public_html/b-2026.asadaauto.jp` 配下だけに配置します。親の `public_html` は削除・上書きしません。
 
 ## 2. アップロード
 
 1. リポジトリ全体を`laravel_app`へアップロード
-2. `deploy/xserver/public_html/index.php` を `public_html/index.php` にコピー
-3. `deploy/xserver/public_html/.htaccess` を `public_html/.htaccess` にコピー
-4. `public_html/index.php`の`$laravelBasePath`を実際の絶対パスに修正
+2. `deploy/xserver/public_html/index.php` を `public_html/b-2026.asadaauto.jp/index.php` にコピー
+3. `deploy/xserver/public_html/.htaccess` を `public_html/b-2026.asadaauto.jp/.htaccess` にコピー
+4. `public_html/b-2026.asadaauto.jp/index.php`の`$laravelBasePath`を実際の絶対パスに修正
 
 ## 3. SSHで初期化
 
 ```bash
-cd /home/<account>/laravel_app
+cd /home/<account>/<domain>/laravel_app
 cp .env.xserver.example .env
 composer install --no-dev --optimize-autoloader
 php artisan key:generate --force
@@ -38,7 +39,7 @@ php artisan storage:link
 XserverのCronに1分間隔で以下を登録します。
 
 ```cron
-* * * * * /path/to/php /home/<account>/laravel_app/artisan schedule:run >> /dev/null 2>&1
+* * * * * /path/to/php /home/<account>/<domain>/laravel_app/artisan schedule:run >> /dev/null 2>&1
 ```
 
 - `/path/to/php` はXserverのサーバー情報ページまたは `which php` で確認した実パスを指定
@@ -47,7 +48,7 @@ XserverのCronに1分間隔で以下を登録します。
 ## 5. 更新デプロイ
 
 ```bash
-cd /home/<account>/laravel_app
+cd /home/<account>/<domain>/laravel_app
 git pull
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
@@ -81,12 +82,12 @@ Secrets:
 Variables:
 
 - `DEPLOY_LARAVEL_BASE_PATH`: Xserver 上の Laravel 本体配置先
-  - 例: `/home/<account>/laravel_app`
+  - 例: `/home/<account>/<domain>/laravel_app`
 - `FTP_LARAVEL_APP_DIR`: Laravel 本体アップロード先
-  - 例: `/home/<account>/laravel_app/`
+  - 例: `laravel_app/` または `/home/<account>/<domain>/laravel_app/`
 - `FTP_PUBLIC_HTML_DIR`: 公開ディレクトリアップロード先
-  - 例: `/home/<account>/<domain>/public_html/`
   - この環境では `public_html/b-2026.asadaauto.jp/`
+  - `public_html/` は旧 FuelPHP サイトの公開領域なので指定しないでください
 - `FTP_PORT`: 任意。未設定時は `21`
 - `FTP_PROTOCOL`: 任意。未設定時は `ftp`
   - `ftps` が使える契約なら `ftps` を推奨
@@ -127,6 +128,8 @@ Variables:
 - `public/storage` はサーバー側の `php artisan storage:link` を維持する前提で、自動アップロード対象から外しています
 - GitHub Actions 上で失敗箇所が分かりにくい場合は、`Run deployment diagnostics` のログを確認してください。FTP パスワードなどは表示せず、変数・テンプレート・生成物の状態だけを出します。診断用の生成物は runner の一時ディレクトリに作成し、FTP アップロード対象には含めません
 - `vendor/autoload.php` が存在しない状態で公開領域へアクセスされた場合、公開テンプレートは PHP の Fatal error ではなく HTTP 503 を返します
+- `.env` は FTP アップロード対象外です。初回だけサーバー上で `.env.xserver.example` から `.env` を作成し、DB などの本番値を設定してから `php artisan key:generate --force` を実行してください。`APP_KEY` が空、または `AES-256-CBC` に合わない長さの場合、post-deploy は失敗します
+- `bootstrap/cache` と `storage/framework/views` などの Laravel 書き込み先が作成・書き込み不可の場合も post-deploy は失敗します
 
 ### 6-4. Xserver の SSH 設定
 

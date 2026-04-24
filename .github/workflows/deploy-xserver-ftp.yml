@@ -87,6 +87,13 @@ jobs:
             exit 1
           fi
 
+          normalized_public_html_dir="${FTP_PUBLIC_HTML_DIR%/}"
+
+          if [[ "${normalized_public_html_dir}" == "public_html" || "${normalized_public_html_dir}" == */public_html ]]; then
+            echo "::error::FTP_PUBLIC_HTML_DIR points to the legacy FuelPHP document root. Use public_html/b-2026.asadaauto.jp/ for this Laravel subdomain."
+            exit 1
+          fi
+
           if [[ "${RUN_MIGRATIONS}" != "true" && "${RUN_MIGRATIONS}" != "false" ]]; then
             echo "::error::RUN_MIGRATIONS must be either true or false."
             exit 1

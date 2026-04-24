@@ -103,6 +103,14 @@ done
 if [[ "${FTP_PUBLIC_HTML_DIR:-}" == "public/" ]]; then
     warn "FTP_PUBLIC_HTML_DIR is public/. Xserverでは public_html/ または public_html/b-2026.asadaauto.jp/ の可能性が高いです。"
 fi
+
+normalized_public_html_dir="${FTP_PUBLIC_HTML_DIR:-}"
+normalized_public_html_dir="${normalized_public_html_dir%/}"
+
+if [[ "${normalized_public_html_dir}" == "public_html" || "${normalized_public_html_dir}" == */public_html ]]; then
+    echo "FTP_PUBLIC_HTML_DIR points to the legacy FuelPHP document root. Use public_html/b-2026.asadaauto.jp/ for this Laravel subdomain."
+    failures=$((failures + 1))
+fi
 end_section
 
 section "Required commands"
