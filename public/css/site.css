@@ -395,10 +395,10 @@ img {
 /* ヒーロー検索ボックス */
 .hero-search {
     background: #fff;
-    border-radius: 10px;
+    border-radius: 12px;
     border-top: 4px solid var(--red);
-    padding: 24px 28px 22px;
-    max-width: 920px;
+    padding: 28px 32px 30px;
+    max-width: 940px;
     margin: 0 auto;
     box-shadow: 0 12px 48px rgba(0, 0, 0, .45), 0 2px 0 rgba(204, 0, 0, .4);
 }
@@ -407,67 +407,77 @@ img {
     font-size: 14px;
     font-weight: 900;
     color: var(--text);
-    margin: 0 0 14px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--line-light);
+    margin: 0 0 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--line-light);
     display: flex;
     align-items: center;
     gap: 8px;
-    letter-spacing: .02em;
+    letter-spacing: .04em;
 }
 
 .hero-search-title::before {
     content: '🔍';
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .hero-search-form {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr auto;
-    gap: 10px;
+    gap: 16px;
     align-items: end;
 }
 
 .hero-search-field label {
     display: block;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--muted);
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    letter-spacing: .04em;
 }
 
 .hero-search-field select,
 .hero-search-field input {
     width: 100%;
-    height: 40px;
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    padding: 0 10px;
-    font-size: 13px;
-    background: #fff;
+    height: 46px;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 0 14px;
+    font-size: 14px;
+    background: #fafafa;
     color: var(--text);
     appearance: auto;
+    transition: border-color .18s, background .18s, box-shadow .18s;
+}
+
+.hero-search-field select:hover,
+.hero-search-field input:hover {
+    border-color: #bbb;
+    background: #fff;
 }
 
 .hero-search-field select:focus,
 .hero-search-field input:focus {
     outline: none;
     border-color: var(--red);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, .10);
 }
 
 .hero-search-btn {
-    height: 42px;
+    height: 46px;
     background: linear-gradient(135deg, #e00000 0%, #bb0000 100%);
     color: #fff;
     border: none;
     border-radius: 6px;
     font-size: 14px;
     font-weight: 900;
-    padding: 0 28px;
+    padding: 0 32px;
     cursor: pointer;
     white-space: nowrap;
     transition: filter var(--transition), transform var(--transition), box-shadow var(--transition);
-    letter-spacing: .05em;
+    letter-spacing: .08em;
     box-shadow: 0 3px 10px rgba(204, 0, 0, .4);
 }
 
@@ -545,8 +555,8 @@ img {
     border: 1px solid var(--line);
     border-top: 3px solid var(--red);
     border-radius: 0 0 8px 8px;
-    padding: 20px 22px;
-    margin-bottom: 24px;
+    padding: 22px 28px 26px;
+    margin-bottom: 28px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -601,28 +611,35 @@ img {
 
 .filter-form {
     display: grid;
-    gap: 12px;
+    gap: 28px;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 }
 
 label {
     display: grid;
-    gap: 4px;
+    gap: 8px;
     font-size: 12px;
     color: var(--muted);
     font-weight: 700;
+    letter-spacing: .04em;
 }
 
 input,
 select {
-    border: 1px solid #d8d8d8;
-    border-radius: 5px;
-    height: 37px;
-    padding: 0 10px;
-    font-size: 13px;
+    border: 1.5px solid #d8d8d8;
+    border-radius: 6px;
+    height: 42px;
+    padding: 0 13px;
+    font-size: 14px;
     background: #fafafa;
     color: var(--text);
     transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+input:hover,
+select:hover {
+    border-color: #bbb;
+    background: #fff;
 }
 
 input:focus,
@@ -636,23 +653,25 @@ select:focus {
 .filter-actions {
     display: flex;
     align-items: end;
-    gap: 10px;
+    gap: 12px;
+    padding-top: 6px;
 }
 
 button {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    height: 36px;
-    border-radius: 3px;
+    height: 42px;
+    border-radius: 6px;
     font-weight: 700;
     font-size: 13px;
-    padding: 0 20px;
+    padding: 0 24px;
     border: none;
     background: var(--red);
     color: #fff;
     cursor: pointer;
     transition: background .15s;
+    letter-spacing: .04em;
 }
 
 button:hover {
@@ -663,19 +682,21 @@ button:hover {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    height: 36px;
-    border-radius: 3px;
+    height: 42px;
+    border-radius: 6px;
     font-weight: 700;
     font-size: 13px;
-    padding: 0 16px;
+    padding: 0 20px;
     color: var(--muted);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--line);
     background: #fff;
     text-decoration: none;
+    transition: background .15s, border-color .15s;
 }
 
 .filter-actions a:hover {
     background: var(--bg);
+    border-color: #bbb;
     text-decoration: none;
 }
 
@@ -2327,41 +2348,47 @@ dd {
 .home-hero-search-card-head {
     background: linear-gradient(135deg, #d40010 0%, #cc0000 60%, #c40000 100%);
     color: #fff;
-    padding: 16px 20px;
-    font-size: 15px;
+    padding: 20px 28px;
+    font-size: 16px;
     font-weight: 900;
     display: flex;
     align-items: center;
-    gap: 8px;
-    letter-spacing: .02em;
+    gap: 10px;
+    letter-spacing: .06em;
 }
 
 .search-card-count {
     margin-left: auto;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    color: rgba(255, 255, 255, .8);
+    color: rgba(255, 255, 255, .85);
     letter-spacing: .02em;
 }
 
 .home-hero-search-card-body {
-    padding: 20px 20px 18px;
+    padding: 28px 28px 26px;
     display: flex;
     flex-direction: column;
-    gap: 13px;
+    gap: 20px;
+}
+
+.home-hero-search-card-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .hero-form-field {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 10px;
 }
 
 .hero-form-field label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--muted);
-    letter-spacing: .04em;
+    letter-spacing: .06em;
     display: block;
     margin: 0;
     height: auto;
@@ -2370,28 +2397,33 @@ dd {
 
 .hero-form-field select {
     width: 100%;
-    height: 44px;
+    height: 50px;
     border: 1.5px solid #ddd;
-    border-radius: 7px;
-    padding: 0 12px;
-    font-size: 13.5px;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 14px;
     color: var(--text);
     background: #fafafa;
-    transition: border-color .15s, box-shadow .15s;
+    transition: border-color .18s, box-shadow .18s, background .18s;
     appearance: auto;
+}
+
+.hero-form-field select:hover {
+    border-color: #bbb;
+    background: #fff;
 }
 
 .hero-form-field select:focus {
     outline: none;
     border-color: var(--red);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(204, 0, 0, .1);
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, .10);
 }
 
 .hero-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 16px;
 }
 
 .hero-search-submit {
@@ -2428,12 +2460,12 @@ dd {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
-    font-size: 11px;
+    gap: 8px;
+    font-size: 12px;
     color: var(--muted);
     border-top: 1px solid var(--line-light);
-    padding-top: 12px;
-    margin-top: -2px;
+    padding-top: 14px;
+    margin-top: 0;
 }
 
 .hero-search-shortcuts span {
@@ -2910,12 +2942,9 @@ dd {
 }
 
 .body-type-count {
-    font-size: 11px;
-    color: var(--muted);
-    background: var(--bg);
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 600;
+    font-size: 12px;
+    color: var(--red);
+    font-weight: 700;
 }
 
 /* ============================================================
@@ -5237,30 +5266,37 @@ dd {
 .hero-search-field select,
 .hero-search-field input {
     width: 100%;
-    height: 42px;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 0 12px;
-    font-size: 13px;
-    background: #fff;
+    height: 46px;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 0 14px;
+    font-size: 14px;
+    background: #fafafa;
     color: var(--text);
     font-family: inherit;
-    transition: border-color .15s, box-shadow .15s;
+    transition: border-color .18s, box-shadow .18s, background .18s;
+}
+
+.hero-search-field select:hover,
+.hero-search-field input:hover {
+    border-color: #bbb;
+    background: #fff;
 }
 
 .hero-search-field select:focus,
 .hero-search-field input:focus {
     outline: none;
     border-color: var(--red);
-    box-shadow: 0 0 0 3px rgba(204, 0, 0, .1);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, .10);
 }
 
 .hero-search-field label {
     display: block;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--muted);
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     letter-spacing: .04em;
 }
 
@@ -5295,9 +5331,9 @@ dd {
     background: #fff;
     border: 1px solid var(--line);
     border-top: 3px solid var(--red);
-    border-radius: 0 0 6px 6px;
-    padding: 20px;
-    margin-bottom: 24px;
+    border-radius: 0 0 8px 8px;
+    padding: 22px 28px 26px;
+    margin-bottom: 28px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -6532,45 +6568,44 @@ dd {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 18px 10px 14px;
+    gap: 10px;
+    padding: 22px 10px 16px;
     background: #fff;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-card);
+    border: 1.5px solid var(--line);
+    border-top: 3px solid transparent;
+    border-radius: 10px;
     text-decoration: none;
     color: var(--text);
-    transition: all var(--transition);
-    box-shadow: var(--shadow-sm);
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    position: relative;
 }
 
 .body-type-card:hover {
-    background: linear-gradient(135deg, #e60010 0%, #cc0000 100%);
-    border-color: var(--red);
-    color: #fff;
+    border-top-color: var(--red);
+    border-color: rgba(230, 0, 16, .25);
+    border-top-color: var(--red);
+    color: var(--text);
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(204, 0, 0, .35);
+    box-shadow: 0 8px 20px rgba(0,0,0,.10);
     text-decoration: none;
 }
 
 .body-type-card:hover .body-type-icon-wrap {
+    background: var(--red);
     color: #fff;
-    background: rgba(255, 255, 255, .2);
-}
-
-.body-type-card:hover .body-type-count {
-    color: rgba(255, 255, 255, .8);
 }
 
 .body-type-icon-wrap {
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: var(--bg);
+    background: #fff0f0;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--red);
-    transition: all var(--transition);
+    transition: background .2s, color .2s;
 }
 
 .body-type-icon-wrap svg {
@@ -6579,25 +6614,37 @@ dd {
 }
 
 .body-type-name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     text-align: center;
     line-height: 1.3;
+    color: var(--text);
 }
 
 .body-type-count {
-    font-size: 13px;
-    color: var(--muted);
-    font-weight: 600;
-    transition: color var(--transition);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--red);
+    background: #fff0f0;
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(230, 0, 16, .18);
 }
 
 .body-type-sport .body-type-icon-wrap {
+    background: #fff5ec;
     color: var(--orange);
 }
 
 .body-type-card-all .body-type-icon-wrap {
+    background: #eef4ff;
     color: var(--blue);
+}
+
+.body-type-card-all .body-type-count {
+    color: var(--blue);
+    background: #eef4ff;
+    border-color: rgba(59,130,246,.18);
 }
 
 /* ============================================================
@@ -7186,12 +7233,17 @@ dd {
 
 /* ---- 共通フォーム要素 ---- */
 label {
-    font-size: 13px;
+    font-size: 12px;
+    gap: 8px;
+    letter-spacing: .04em;
 }
 input,
 select {
     font-size: 14px;
-    height: 40px;
+    height: 42px;
+    padding: 0 13px;
+    border-radius: 6px;
+    border-width: 1.5px;
 }
 textarea.form-input {
     height: auto;
@@ -7199,7 +7251,11 @@ textarea.form-input {
     font-family: inherit;
 }
 button {
-    font-size: 14px;
+    font-size: 13px;
+    height: 42px;
+    padding: 0 24px;
+    border-radius: 6px;
+    letter-spacing: .04em;
 }
 
 /* ---- 在庫一覧ヘッダー ---- */
