@@ -106,8 +106,8 @@ Variables:
 2. `npm ci && npm run build` で Vite アセットを生成
 3. `.deploy/laravel_app` と `.deploy/public_html` を組み立て
 4. `vendor/`, `.env`, `storage/` を除外して Laravel 本体を FTP 同期
-5. `public_html` を FTP 同期
-6. SSH でサーバーに接続し、Laravel 本体ディレクトリで `composer install --no-dev --optimize-autoloader` を実行
+5. SSH でサーバーに接続し、Laravel 本体ディレクトリで `composer install --no-dev --optimize-autoloader` を実行
+6. Composer と `php artisan optimize` が成功した後に `public_html` を FTP 同期
 
 `public_html` 側には以下が含まれます。
 
@@ -126,6 +126,7 @@ Variables:
 - DB マイグレーションは `RUN_MIGRATIONS=true` にした場合だけ自動実行します。通常は安全のため `false` のままにしてください
 - `public/storage` はサーバー側の `php artisan storage:link` を維持する前提で、自動アップロード対象から外しています
 - GitHub Actions 上で失敗箇所が分かりにくい場合は、`Run deployment diagnostics` のログを確認してください。FTP パスワードなどは表示せず、変数・テンプレート・生成物の状態だけを出します。診断用の生成物は runner の一時ディレクトリに作成し、FTP アップロード対象には含めません
+- `vendor/autoload.php` が存在しない状態で公開領域へアクセスされた場合、公開テンプレートは PHP の Fatal error ではなく HTTP 503 を返します
 
 ### 6-4. Xserver の SSH 設定
 
