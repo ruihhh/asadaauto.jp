@@ -63,6 +63,13 @@ print_value FTP_PROTOCOL
 print_value DEPLOY_LARAVEL_BASE_PATH
 print_value FTP_LARAVEL_APP_DIR
 print_value FTP_PUBLIC_HTML_DIR
+print_value SSH_PORT
+print_value SSH_PHP_BIN
+print_value SSH_COMPOSER_BIN
+print_value SSH_CONNECT_RETRIES
+print_value SSH_CONNECT_RETRY_DELAY
+print_value SSH_COMPOSER_MEMORY_LIMIT
+print_value RUN_MIGRATIONS
 end_section
 
 section "Variable checks"

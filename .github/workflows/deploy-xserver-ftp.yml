@@ -33,6 +33,9 @@ jobs:
       SSH_PORT: ${{ vars.SSH_PORT || '10022' }}
       SSH_PHP_BIN: ${{ vars.SSH_PHP_BIN || 'php' }}
       SSH_COMPOSER_BIN: ${{ vars.SSH_COMPOSER_BIN || 'composer' }}
+      SSH_CONNECT_RETRIES: ${{ vars.SSH_CONNECT_RETRIES || '3' }}
+      SSH_CONNECT_RETRY_DELAY: ${{ vars.SSH_CONNECT_RETRY_DELAY || '5' }}
+      SSH_COMPOSER_MEMORY_LIMIT: ${{ vars.SSH_COMPOSER_MEMORY_LIMIT || '-1' }}
       RUN_MIGRATIONS: ${{ vars.RUN_MIGRATIONS || 'false' }}
 
     steps:
@@ -86,6 +89,21 @@ jobs:
 
           if [[ "${RUN_MIGRATIONS}" != "true" && "${RUN_MIGRATIONS}" != "false" ]]; then
             echo "::error::RUN_MIGRATIONS must be either true or false."
+            exit 1
+          fi
+
+          if [[ ! "${SSH_CONNECT_RETRIES}" =~ ^[0-9]+$ ]]; then
+            echo "::error::SSH_CONNECT_RETRIES must be a positive integer."
+            exit 1
+          fi
+
+          if [[ ! "${SSH_CONNECT_RETRY_DELAY}" =~ ^[0-9]+$ ]]; then
+            echo "::error::SSH_CONNECT_RETRY_DELAY must be a non-negative integer."
+            exit 1
+          fi
+
+          if ((10#${SSH_CONNECT_RETRIES} < 1)); then
+            echo "::error::SSH_CONNECT_RETRIES must be a positive integer."
             exit 1
           fi
 
