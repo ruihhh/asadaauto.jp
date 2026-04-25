@@ -184,17 +184,26 @@ class CarController extends Controller
         return redirect()->route('admin.cars.edit', $car)->with('success', '画像を削除しました。');
     }
 
+    private function imagesRoot(): string
+    {
+        return rtrim(env('APP_IMAGES_ROOT', public_path('images')), '/');
+    }
+
     private function storeImage(\Illuminate\Http\UploadedFile $file): string
     {
+        $dir = $this->imagesRoot() . '/cars';
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
         $filename = $file->hashName();
-        $file->move(public_path('images/cars'), $filename);
+        $file->move($dir, $filename);
         return 'cars/' . $filename;
     }
 
     private function deleteImage(?string $path): void
     {
         if ($path) {
-            @unlink(public_path('images/' . $path));
+            @unlink($this->imagesRoot() . '/' . $path);
         }
     }
 
