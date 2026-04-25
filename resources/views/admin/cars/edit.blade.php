@@ -375,16 +375,17 @@
                                                 <div class="relative group aspect-[4/3]">
                                                     <img src="{{ '/images/' . $img->path }}"
                                                          class="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm transition group-hover:brightness-75">
-                                                    <form action="{{ route('admin.cars.images.destroy', [$car, $img]) }}" method="POST"
-                                                          onsubmit="return confirm('この画像を削除しますか？');"
-                                                          class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit"
-                                                                class="w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-md transition">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                        </button>
-                                                    </form>
+                                                    <button type="button"
+                                                            class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-md"
+                                                            onclick="if(confirm('この画像を削除しますか？')){
+                                                                fetch('{{ route('admin.cars.images.destroy', [$car, $img]) }}', {
+                                                                    method: 'POST',
+                                                                    headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/x-www-form-urlencoded'},
+                                                                    body: '_method=DELETE'
+                                                                }).then(() => location.reload());
+                                                            }">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    </button>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -442,6 +443,8 @@
                         </section>
 
                     </div>{{-- /メインフォーム --}}
+
+            </form>{{-- /car-edit-form ここで閉じる（サイドバーのネスト防止） --}}
 
                     {{-- ===== 右サイドバー ===== --}}
                     <aside class="w-full lg:w-72 flex-shrink-0 space-y-4 lg:sticky lg:top-6">
@@ -540,7 +543,6 @@
                     </aside>{{-- /サイドバー --}}
 
                 </div>{{-- /flex --}}
-            </form>
         </div>
     </div>
 
