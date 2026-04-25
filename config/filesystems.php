@@ -15,6 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'images_root' => env('APP_IMAGES_ROOT', public_path('images')),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

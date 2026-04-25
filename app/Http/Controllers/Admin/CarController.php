@@ -186,7 +186,7 @@ class CarController extends Controller
 
     private function imagesRoot(): string
     {
-        return rtrim(env('APP_IMAGES_ROOT', public_path('images')), '/');
+        return rtrim(config('filesystems.images_root', public_path('images')), '/');
     }
 
     private function storeImage(\Illuminate\Http\UploadedFile $file): string
