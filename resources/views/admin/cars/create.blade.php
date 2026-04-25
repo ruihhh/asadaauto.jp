@@ -11,11 +11,58 @@
         </div>
     </x-slot>
 
-    {{-- ページ固有データを window 変数へ（HTML属性内の@jsonを避けるため） --}}
+    {{-- ページ固有データ＆Alpine関数（@push非対応のため直接配置） --}}
     <script>
         window.__carCreate = {
             masterData: @json($masterData),
         };
+
+        function carMasterForm() {
+            const d = window.__carCreate;
+            return {
+                make: '',
+                model: '',
+                grade: '',
+                masterData: d.masterData ?? { makes: [], models: {}, grades: {} },
+                get filteredModels() {
+                    return this.masterData.models[this.make] ?? [];
+                },
+                get filteredGrades() {
+                    return this.masterData.grades[this.make + '@@' + this.model] ?? [];
+                },
+                onMakeChange() {
+                    if (!this.filteredModels.includes(this.model)) {
+                        this.model = '';
+                        this.grade = '';
+                    }
+                },
+                onModelChange() {
+                    if (!this.filteredGrades.includes(this.grade)) {
+                        this.grade = '';
+                    }
+                },
+            };
+        }
+
+        function imagePreview() {
+            return {
+                previewUrl: null,
+                fileName: '',
+                onFile(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    this.fileName = file.name;
+                    const reader = new FileReader();
+                    reader.onload = (e) => { this.previewUrl = e.target.result; };
+                    reader.readAsDataURL(file);
+                },
+                clear() {
+                    this.previewUrl = null;
+                    this.fileName = '';
+                    document.getElementById('image').value = '';
+                },
+            };
+        }
     </script>
 
     <div class="py-8">
@@ -294,53 +341,3 @@
     </div>
 </x-app-layout>
 
-@push('scripts')
-<script>
-function carMasterForm() {
-    const d = window.__carCreate;
-    return {
-        make: '',
-        model: '',
-        grade: '',
-        masterData: d.masterData ?? { makes: [], models: {}, grades: {} },
-        get filteredModels() {
-            return this.masterData.models[this.make] ?? [];
-        },
-        get filteredGrades() {
-            return this.masterData.grades[this.make + '@@' + this.model] ?? [];
-        },
-        onMakeChange() {
-            if (!this.filteredModels.includes(this.model)) {
-                this.model = '';
-                this.grade = '';
-            }
-        },
-        onModelChange() {
-            if (!this.filteredGrades.includes(this.grade)) {
-                this.grade = '';
-            }
-        },
-    };
-}
-
-function imagePreview() {
-    return {
-        previewUrl: null,
-        fileName: '',
-        onFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            this.fileName = file.name;
-            const reader = new FileReader();
-            reader.onload = (e) => { this.previewUrl = e.target.result; };
-            reader.readAsDataURL(file);
-        },
-        clear() {
-            this.previewUrl = null;
-            this.fileName = '';
-            document.getElementById('image').value = '';
-        },
-    };
-}
-</script>
-@endpush
