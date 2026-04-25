@@ -10,7 +10,6 @@ use App\Models\CarMake;
 use App\Models\CarModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class CarController extends Controller
@@ -80,7 +79,7 @@ class CarController extends Controller
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
 
         if ($request->hasFile('image')) {
-            $validated['image_path'] = $request->file('image')->store('cars', 'images');
+            $validated['image_path'] = $this->storeImage($request->file('image'));
         }
 
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
@@ -89,7 +88,7 @@ class CarController extends Controller
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $i => $file) {
-                $path = $file->store('cars', 'images');
+                $path = $this->storeImage($file);
                 $car->images()->create(['path' => $path, 'sort_order' => $i]);
             }
         }
@@ -134,10 +133,8 @@ class CarController extends Controller
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
 
         if ($request->hasFile('image')) {
-            if ($car->image_path) {
-                Storage::disk('images')->delete($car->image_path);
-            }
-            $validated['image_path'] = $request->file('image')->store('cars', 'images');
+            $this->deleteImage($car->image_path);
+            $validated['image_path'] = $this->storeImage($request->file('image'));
         }
 
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
@@ -147,7 +144,7 @@ class CarController extends Controller
         if ($request->hasFile('images')) {
             $nextOrder = $car->images()->max('sort_order') + 1;
             foreach ($request->file('images') as $i => $file) {
-                $path = $file->store('cars', 'images');
+                $path = $this->storeImage($file);
                 $car->images()->create(['path' => $path, 'sort_order' => $nextOrder + $i]);
             }
         }
@@ -157,11 +154,9 @@ class CarController extends Controller
 
     public function destroy(Car $car): RedirectResponse
     {
-        if ($car->image_path) {
-            Storage::disk('images')->delete($car->image_path);
-        }
+        $this->deleteImage($car->image_path);
         foreach ($car->images as $img) {
-            Storage::disk('images')->delete($img->path);
+            $this->deleteImage($img->path);
         }
         $car->delete();
         return redirect()->route('admin.cars.index')->with('success', '車両を削除しました。');
@@ -183,10 +178,24 @@ class CarController extends Controller
     public function imageDestroy(Car $car, CarImage $image): RedirectResponse
     {
         abort_unless($image->car_id === $car->id, 404);
-        Storage::disk('images')->delete($image->path);
+        $this->deleteImage($image->path);
         $image->delete();
 
         return redirect()->route('admin.cars.edit', $car)->with('success', '画像を削除しました。');
+    }
+
+    private function storeImage(\Illuminate\Http\UploadedFile $file): string
+    {
+        $filename = $file->hashName();
+        $file->move(public_path('images/cars'), $filename);
+        return 'cars/' . $filename;
+    }
+
+    private function deleteImage(?string $path): void
+    {
+        if ($path) {
+            @unlink(public_path('images/' . $path));
+        }
     }
 
     private function masterData(): array
