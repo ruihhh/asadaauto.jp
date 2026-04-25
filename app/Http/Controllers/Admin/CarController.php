@@ -80,7 +80,7 @@ class CarController extends Controller
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
 
         if ($request->hasFile('image')) {
-            $validated['image_path'] = $request->file('image')->store('cars', 'public');
+            $validated['image_path'] = $request->file('image')->store('cars', 'images');
         }
 
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
@@ -89,7 +89,7 @@ class CarController extends Controller
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $i => $file) {
-                $path = $file->store('cars', 'public');
+                $path = $file->store('cars', 'images');
                 $car->images()->create(['path' => $path, 'sort_order' => $i]);
             }
         }
@@ -135,9 +135,9 @@ class CarController extends Controller
 
         if ($request->hasFile('image')) {
             if ($car->image_path) {
-                Storage::disk('public')->delete($car->image_path);
+                Storage::disk('images')->delete($car->image_path);
             }
-            $validated['image_path'] = $request->file('image')->store('cars', 'public');
+            $validated['image_path'] = $request->file('image')->store('cars', 'images');
         }
 
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
@@ -147,7 +147,7 @@ class CarController extends Controller
         if ($request->hasFile('images')) {
             $nextOrder = $car->images()->max('sort_order') + 1;
             foreach ($request->file('images') as $i => $file) {
-                $path = $file->store('cars', 'public');
+                $path = $file->store('cars', 'images');
                 $car->images()->create(['path' => $path, 'sort_order' => $nextOrder + $i]);
             }
         }
@@ -158,10 +158,10 @@ class CarController extends Controller
     public function destroy(Car $car): RedirectResponse
     {
         if ($car->image_path) {
-            Storage::disk('public')->delete($car->image_path);
+            Storage::disk('images')->delete($car->image_path);
         }
         foreach ($car->images as $img) {
-            Storage::disk('public')->delete($img->path);
+            Storage::disk('images')->delete($img->path);
         }
         $car->delete();
         return redirect()->route('admin.cars.index')->with('success', '車両を削除しました。');
@@ -183,7 +183,7 @@ class CarController extends Controller
     public function imageDestroy(Car $car, CarImage $image): RedirectResponse
     {
         abort_unless($image->car_id === $car->id, 404);
-        Storage::disk('public')->delete($image->path);
+        Storage::disk('images')->delete($image->path);
         $image->delete();
 
         return redirect()->route('admin.cars.edit', $car)->with('success', '画像を削除しました。');
