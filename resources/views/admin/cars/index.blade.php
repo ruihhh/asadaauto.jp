@@ -125,7 +125,7 @@
                                 <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">在庫番号</th>
                                 <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">車両情報</th>
                                 <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">年式 / 走行</th>
-                                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">価格</th>
+                                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">支払総額</th>
                                 <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">ステータス</th>
                                 <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">注目</th>
                                 <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">操作</th>

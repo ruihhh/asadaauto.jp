@@ -158,9 +158,16 @@
 
                 {{-- 価格 --}}
                 <div class="detail-price">
+                    <span class="detail-price-label">支払総額</span>
                     <span class="detail-price-value">{{ number_format($car->price) }}</span>
                     <span class="detail-price-unit">円（税込）</span>
                 </div>
+                @if($car->base_price)
+                <div class="detail-base-price">
+                    <span class="detail-base-price-label">車両本体価格</span>
+                    <span class="detail-base-price-value">{{ number_format($car->base_price) }}円</span>
+                </div>
+                @endif
 
                 {{-- スペックグリッド --}}
                 <div class="spec-grid">
@@ -235,6 +242,156 @@
         </div>
         @endif
 
+        {{-- 価格内訳 --}}
+        @if($car->base_price)
+        <div class="detail-section">
+            <h3 class="detail-section-title">価格内訳</h3>
+            <table class="price-table">
+                <tbody>
+                    <tr class="price-table-total">
+                        <th>支払総額（税込）</th>
+                        <td>{{ number_format($car->price) }} <span>円</span></td>
+                    </tr>
+                    <tr>
+                        <th>車両本体価格</th>
+                        <td>{{ number_format($car->base_price) }} <span>円</span></td>
+                    </tr>
+                    <tr>
+                        <th>諸費用目安</th>
+                        <td>約 {{ number_format($car->price - $car->base_price) }} <span>円</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="price-table-note">※諸費用には登録手数料・自動車税・自賠責保険・整備費用などが含まれます。詳細はお問い合わせください。</p>
+        </div>
+        @endif
+
+        {{-- 車両のポイント --}}
+        <div class="detail-section">
+            <h3 class="detail-section-title">車両のポイント</h3>
+            <div class="car-points-grid">
+                <div class="car-point {{ $car->accident_count === 0 ? 'car-point-good' : 'car-point-caution' }}">
+                    <span class="car-point-icon">{{ $car->accident_count === 0 ? '✓' : '!' }}</span>
+                    <div>
+                        <p class="car-point-label">事故歴</p>
+                        <p class="car-point-value">{{ $car->accident_count === 0 ? 'なし' : $car->accident_count . '回あり' }}</p>
+                    </div>
+                </div>
+                <div class="car-point {{ $car->has_service_record ? 'car-point-good' : '' }}">
+                    <span class="car-point-icon">{{ $car->has_service_record ? '✓' : '—' }}</span>
+                    <div>
+                        <p class="car-point-label">整備記録簿</p>
+                        <p class="car-point-value">{{ $car->has_service_record ? 'あり' : 'なし' }}</p>
+                    </div>
+                </div>
+                @if($car->inspection_expiry)
+                <div class="car-point {{ $car->inspection_expiry->isFuture() ? 'car-point-good' : '' }}">
+                    <span class="car-point-icon">{{ $car->inspection_expiry->isFuture() ? '✓' : '—' }}</span>
+                    <div>
+                        <p class="car-point-label">車検</p>
+                        <p class="car-point-value">{{ $car->inspection_expiry->format('Y年m月') }}まで</p>
+                    </div>
+                </div>
+                @endif
+                <div class="car-point">
+                    <span class="car-point-icon">✓</span>
+                    <div>
+                        <p class="car-point-label">走行距離</p>
+                        <p class="car-point-value">{{ number_format($car->mileage) }} km</p>
+                    </div>
+                </div>
+                @if($car->location)
+                <div class="car-point">
+                    <span class="car-point-icon">📍</span>
+                    <div>
+                        <p class="car-point-label">保管場所</p>
+                        <p class="car-point-value">{{ $car->location }}</p>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- 購入の流れ --}}
+        <div class="detail-section">
+            <h3 class="detail-section-title">ご購入の流れ</h3>
+            <div class="purchase-flow">
+                <div class="purchase-step">
+                    <span class="purchase-step-num">01</span>
+                    <div class="purchase-step-body">
+                        <p class="purchase-step-title">お問い合わせ</p>
+                        <p class="purchase-step-desc">お電話またはWebフォームからお気軽にご連絡ください。</p>
+                    </div>
+                </div>
+                <div class="purchase-step-arrow">›</div>
+                <div class="purchase-step">
+                    <span class="purchase-step-num">02</span>
+                    <div class="purchase-step-body">
+                        <p class="purchase-step-title">ご来店・現車確認</p>
+                        <p class="purchase-step-desc">実車をご覧いただきながら詳細をご説明します。試乗もお気軽にどうぞ。</p>
+                    </div>
+                </div>
+                <div class="purchase-step-arrow">›</div>
+                <div class="purchase-step">
+                    <span class="purchase-step-num">03</span>
+                    <div class="purchase-step-body">
+                        <p class="purchase-step-title">お申込み・手続き</p>
+                        <p class="purchase-step-desc">ローンや各種手続きのご相談もお任せください。</p>
+                    </div>
+                </div>
+                <div class="purchase-step-arrow">›</div>
+                <div class="purchase-step">
+                    <span class="purchase-step-num">04</span>
+                    <div class="purchase-step-body">
+                        <p class="purchase-step-title">納車</p>
+                        <p class="purchase-step-desc">整備・点検完了後、ご自宅へのお届けも承ります。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 問い合わせCTA --}}
+        <div class="detail-cta">
+            <div class="detail-cta-inner">
+                <div class="detail-cta-text">
+                    <p class="detail-cta-title">この車両が気になったら</p>
+                    <p class="detail-cta-sub">在庫確認・試乗・ローン相談など、お気軽にどうぞ</p>
+                </div>
+                <div class="detail-cta-actions">
+                    <a href="{{ route('contact.index', ['stock_no' => $car->stock_no]) }}" class="btn-primary detail-cta-btn">
+                        Webで問い合わせる
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {{-- 安心ポイント --}}
+        <div class="detail-section">
+            <h3 class="detail-section-title">アサダオートサポートの安心保証</h3>
+            <div class="assurance-grid">
+                <div class="assurance-item">
+                    <span class="assurance-icon">🔍</span>
+                    <p class="assurance-title">納車前点検整備</p>
+                    <p class="assurance-desc">すべての車両を納車前に点検・整備して安心してお乗りいただけます。</p>
+                </div>
+                <div class="assurance-item">
+                    <span class="assurance-icon">📋</span>
+                    <p class="assurance-title">車両状態の透明開示</p>
+                    <p class="assurance-desc">事故歴・整備記録・車検情報を正直にご案内します。</p>
+                </div>
+                <div class="assurance-item">
+                    <span class="assurance-icon">💬</span>
+                    <p class="assurance-title">ローン・下取り相談</p>
+                    <p class="assurance-desc">各種ローンのご相談や、現在お乗りの車の下取りも承ります。</p>
+                </div>
+                <div class="assurance-item">
+                    <span class="assurance-icon">🚚</span>
+                    <p class="assurance-title">全国納車対応</p>
+                    <p class="assurance-desc">兵庫県外のお客様にも陸送にてご納車いたします。</p>
+                </div>
+            </div>
+        </div>
+
         {{-- 戻るリンク --}}
         <div style="padding:20px 24px;border-top:1px solid var(--line);">
             <a href="{{ route('cars.index') }}" class="back-link">
@@ -274,6 +431,9 @@
                         <h3>{{ $related->make }} {{ $related->model }}</h3>
                         <p class="grade">{{ $related->grade ?: '—' }}</p>
                         <p class="price">{{ number_format($related->price) }}</p>
+                        @if($related->base_price)
+                        <p class="car-card-base-price">本体 {{ number_format($related->base_price) }}円</p>
+                        @endif
                         <dl>
                             <div><dt>年式</dt><dd>{{ $related->model_year }}年</dd></div>
                             <div><dt>走行距離</dt><dd>{{ number_format($related->mileage) }} km</dd></div>

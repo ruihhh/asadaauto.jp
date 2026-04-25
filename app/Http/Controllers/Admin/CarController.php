@@ -61,6 +61,7 @@ class CarController extends Controller
             'model_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
             'price' => 'required|integer|min:0|max:9999999999',
+            'base_price' => 'nullable|integer|min:0|max:9999999999',
             'color' => 'nullable|string|max:32',
             'location' => 'nullable|string|max:64',
             'description' => 'nullable|string',
@@ -115,6 +116,7 @@ class CarController extends Controller
             'model_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
             'price' => 'required|integer|min:0|max:9999999999',
+            'base_price' => 'nullable|integer|min:0|max:9999999999',
             'color' => 'nullable|string|max:32',
             'location' => 'nullable|string|max:64',
             'description' => 'nullable|string',
@@ -251,7 +253,7 @@ class CarController extends Controller
 
             fputcsv($stream, [
                 '在庫番号', 'メーカー', 'モデル', 'グレード', 'ボディタイプ',
-                'トランスミッション', '燃料', '年式', '走行距離(km)', '価格(円)',
+                'トランスミッション', '燃料', '年式', '走行距離(km)', '支払総額(円)', '車両本体価格(円)',
                 '車体色', '保管場所', 'ステータス', '注目', '公開日時', '登録日時',
                 '事故回数', '整備記録', '車検期限',
             ]);
@@ -268,6 +270,7 @@ class CarController extends Controller
                     $car->model_year,
                     $car->mileage,
                     $car->price,
+                    $car->base_price,
                     $car->color,
                     $car->location,
                     $car->status,

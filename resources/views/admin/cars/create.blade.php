@@ -164,12 +164,21 @@
                         </div>
                         <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
                             <div>
-                                <x-input-label for="price" value="価格（税込）*" />
+                                <x-input-label for="price" value="支払総額（税込）*" />
                                 <div class="relative mt-1">
                                     <x-text-input id="price" name="price" type="number" min="0" class="block w-full pr-8" :value="old('price')" required placeholder="0" />
                                     <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">円</span>
                                 </div>
                                 <x-input-error class="mt-1.5" :messages="$errors->get('price')" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="base_price" value="車両本体価格" />
+                                <div class="relative mt-1">
+                                    <x-text-input id="base_price" name="base_price" type="number" min="0" class="block w-full pr-8" :value="old('base_price')" placeholder="0" />
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">円</span>
+                                </div>
+                                <x-input-error class="mt-1.5" :messages="$errors->get('base_price')" />
                             </div>
 
                             <div>

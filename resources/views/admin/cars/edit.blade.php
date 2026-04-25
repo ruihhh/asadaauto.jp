@@ -30,6 +30,7 @@
             grade:      @json(old('grade', $car->grade)),
             masterData: @json($masterData),
             price:      @json(old('price', $car->price)),
+            base_price: @json(old('base_price', $car->base_price)),
         };
     </script>
 
@@ -180,7 +181,7 @@
                             </div>
                             <div class="p-6 grid grid-cols-2 sm:grid-cols-3 gap-5">
                                 <div>
-                                    <x-input-label for="price" value="価格（税込）*" />
+                                    <x-input-label for="price" value="支払総額（税込）*" />
                                     <div class="relative mt-1">
                                         <x-text-input id="price" name="price" type="number" min="0"
                                                       class="block w-full pr-8 text-sm"
@@ -190,6 +191,18 @@
                                     </div>
                                     <p class="mt-1 text-xs text-indigo-600 font-medium h-4" x-text="priceDisplay"></p>
                                     <x-input-error class="mt-0.5" :messages="$errors->get('price')" />
+                                </div>
+
+                                <div>
+                                    <x-input-label for="base_price" value="車両本体価格" />
+                                    <div class="relative mt-1">
+                                        <x-text-input id="base_price" name="base_price" type="number" min="0"
+                                                      class="block w-full pr-8 text-sm"
+                                                      value="{{ old('base_price', $car->base_price) }}"
+                                                      @change="isDirty = true" />
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">円</span>
+                                    </div>
+                                    <x-input-error class="mt-0.5" :messages="$errors->get('base_price')" />
                                 </div>
 
                                 <div>
@@ -466,7 +479,7 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-2 text-xs">
                                     <div class="bg-gray-50 rounded-lg px-3 py-2">
-                                        <p class="text-gray-400">価格</p>
+                                        <p class="text-gray-400">支払総額</p>
                                         <p class="font-bold text-gray-700 mt-0.5">{{ number_format($car->price) }}円</p>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg px-3 py-2">

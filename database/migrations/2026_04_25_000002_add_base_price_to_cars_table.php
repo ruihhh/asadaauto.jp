@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('cars', function (Blueprint $table) {
-            $table->unsignedBigInteger('price')->change();
+        Schema::table('cars', function (Blueprint $table): void {
+            $table->unsignedBigInteger('base_price')->nullable()->after('price');
         });
     }
 
     public function down(): void
     {
-        Schema::table('cars', function (Blueprint $table) {
-            $table->unsignedInteger('price')->change();
+        Schema::table('cars', function (Blueprint $table): void {
+            $table->dropColumn('base_price');
         });
     }
 };

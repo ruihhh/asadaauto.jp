@@ -239,6 +239,9 @@
                             <span class="new-fc-price-val">{{ number_format($car->price) }}</span>
                             <span class="new-fc-price-unit">円</span>
                         </div>
+                        @if($car->base_price)
+                        <p class="new-fc-base-price">本体 {{ number_format($car->base_price) }}円</p>
+                        @endif
                         <span class="new-fc-cta">詳しく見る →</span>
                     </div>
                 </a>
@@ -462,6 +465,9 @@
                             <span>{{ $car->body_type }}</span>
                             <span>{{ $car->transmission }}</span>
                         </div>
+                        @if($car->base_price)
+                        <p class="car-card-base-price">本体 {{ number_format($car->base_price) }}円</p>
+                        @endif
                     </div>
                 </a>
 

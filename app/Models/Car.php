@@ -22,6 +22,7 @@ class Car extends Model
         'model_year',
         'mileage',
         'price',
+        'base_price',
         'color',
         'location',
         'description',
