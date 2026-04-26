@@ -3,33 +3,34 @@
    ============================================================ */
 
 :root {
-    --red: #CC0000;
-    --red-dark: #a30000;
-    --red-light: #fff5f5;
+    --red: #C8000A;
+    --red-dark: #960007;
+    --red-light: #fff4f5;
+    --red-mid: #fde8e8;
     --orange: #E8650A;
-    --orange-light: #fff8f0;
-    --blue: #0066CC;
-    --blue-light: #e8f2fc;
-    --green: #1a7c3e;
-    --green-light: #e8f5ed;
-    --bg: #f4f4f4;
+    --orange-light: #fff7f0;
+    --blue: #0055CC;
+    --blue-light: #e6effc;
+    --green: #0f7a35;
+    --green-light: #e6f4ec;
+    --bg: #f2f4f7;
     --surface: #ffffff;
-    --line: #e2e2e2;
-    --line-light: #efefef;
-    --text: #222222;
-    --muted: #666666;
-    --muted-light: #999999;
-    --brand: #CC0000;
-    --brand-dark: #a30000;
+    --line: #e0e4ea;
+    --line-light: #eceef2;
+    --text: #1a1d23;
+    --muted: #5f6675;
+    --muted-light: #9399a6;
+    --brand: #C8000A;
+    --brand-dark: #960007;
     --accent: #E8650A;
     --nav-h: 48px;
-    --radius: 4px;
-    --radius-card: 10px;
-    --shadow-sm: 0 1px 4px rgba(0, 0, 0, .07);
-    --shadow: 0 4px 16px rgba(0, 0, 0, .10);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, .16);
-    --shadow-card-hover: 0 16px 40px rgba(0, 0, 0, .18);
-    --transition: .22s ease;
+    --radius: 6px;
+    --radius-card: 12px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+    --shadow: 0 4px 14px rgba(0, 0, 0, .09);
+    --shadow-lg: 0 10px 36px rgba(0, 0, 0, .14);
+    --shadow-card-hover: 0 20px 48px rgba(0, 0, 0, .16);
+    --transition: .2s ease;
 }
 
 * {
@@ -38,7 +39,7 @@
 
 body {
     margin: 0;
-    background: #f8f9fb;
+    background: var(--bg);
     color: var(--text);
     font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
     font-size: 14px;
@@ -897,8 +898,8 @@ button:hover {
 
 .car-card:hover {
     box-shadow: var(--shadow-card-hover);
-    transform: translateY(-5px);
-    border-color: #d4d4d4;
+    transform: translateY(-6px);
+    border-color: rgba(200, 0, 10, .2);
 }
 
 .car-card-link {
@@ -8619,10 +8620,21 @@ dl div {
     font-size: 15px;
     font-weight: 800;
     color: var(--text);
-    margin: 0 0 18px;
-    padding-left: 10px;
-    border-left: 3px solid var(--red);
+    margin: 0 0 20px;
+    padding: 0 0 12px 14px;
+    border-left: 4px solid var(--red);
     letter-spacing: .02em;
+    position: relative;
+}
+
+.detail-section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    height: 1px;
+    background: var(--line);
 }
 
 /* 価格内訳テーブル */
@@ -8730,6 +8742,70 @@ dl div {
     font-size: 13px;
     font-weight: 800;
     color: var(--text);
+}
+
+/* 装備仕様 */
+.equipment-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.equipment-category-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px 12px;
+}
+
+.equipment-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.equipment-item-on {
+    background: #f0faf0;
+}
+
+.equipment-item-off {
+    opacity: .45;
+}
+
+.equipment-item-icon {
+    font-size: 11px;
+    font-weight: 700;
+    width: 14px;
+    flex-shrink: 0;
+    color: var(--red);
+}
+
+.equipment-item-off .equipment-item-icon {
+    color: var(--muted);
+}
+
+.equipment-item-label {
+    color: var(--text);
+    line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+    .equipment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* 購入の流れ */
@@ -8873,5 +8949,424 @@ dl div {
     }
     .assurance-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================================
+   車両詳細 右パネル（モダンリデザイン）
+   ============================================================ */
+
+.detail-info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 28px 26px;
+    background: #fff;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* バッジ行 */
+.dip-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.dip-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dip-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .04em;
+}
+
+.dip-badge-sale {
+    background: var(--green-light);
+    color: var(--green);
+    border: 1px solid rgba(15, 122, 53, .2);
+}
+
+.dip-badge-reserved {
+    background: #fff8e6;
+    color: #a06000;
+    border: 1px solid rgba(160, 96, 0, .2);
+}
+
+.dip-badge-sold {
+    background: #f5f5f7;
+    color: #606070;
+    border: 1px solid #dde;
+}
+
+.dip-badge-new {
+    background: var(--blue-light);
+    color: var(--blue);
+    border: 1px solid rgba(0, 85, 204, .2);
+}
+
+.dip-badge-featured {
+    background: #fff7e0;
+    color: #8a5800;
+    border: 1px solid rgba(138, 88, 0, .2);
+}
+
+/* お気に入りボタン */
+.dip-fav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--muted);
+    transition: all .18s;
+    white-space: nowrap;
+}
+
+.dip-fav-btn:hover {
+    border-color: #e88;
+    color: #c33;
+}
+
+.dip-fav-btn-active {
+    background: var(--red-mid);
+    border-color: rgba(200, 0, 10, .3) !important;
+    color: var(--red) !important;
+}
+
+/* 車名ブロック */
+.dip-title-block {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.dip-car-name {
+    margin: 0 0 5px;
+    font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+    font-weight: 900;
+    line-height: 1.15;
+    color: var(--text);
+    letter-spacing: -.03em;
+}
+
+.dip-grade {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.dip-stock-no {
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted-light);
+    letter-spacing: .06em;
+    font-feature-settings: "tnum";
+}
+
+/* 価格カード */
+.dip-price-card {
+    background: linear-gradient(140deg, #c8000a 0%, #8a0007 100%);
+    border-radius: 10px;
+    padding: 18px 20px 16px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.dip-price-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    background: rgba(255, 255, 255, .07);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.dip-price-card::after {
+    content: '';
+    position: absolute;
+    bottom: -60px;
+    left: -20px;
+    width: 120px;
+    height: 120px;
+    background: rgba(0, 0, 0, .08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.dpc-eyebrow {
+    margin: 0 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    opacity: .82;
+    position: relative;
+    z-index: 1;
+}
+
+.dpc-main-row {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 10px;
+}
+
+.dpc-yen {
+    font-size: 20px;
+    font-weight: 700;
+    opacity: .85;
+}
+
+.dpc-value {
+    font-size: clamp(2rem, 3.5vw, 2.6rem);
+    font-weight: 900;
+    letter-spacing: -.04em;
+    font-feature-settings: "tnum";
+}
+
+.dpc-base {
+    margin: 0;
+    font-size: 11.5px;
+    opacity: .72;
+    position: relative;
+    z-index: 1;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, .22);
+}
+
+/* 応談価格カード */
+.dip-price-card-oto {
+    background: linear-gradient(140deg, #3a3d4a 0%, #22242e 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.dpc-oto-sub {
+    margin: 0;
+    font-size: 11px;
+    opacity: .72;
+    position: relative;
+    z-index: 1;
+}
+
+.dpc-oto-main {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    position: relative;
+    z-index: 1;
+}
+
+/* スペックグリッド */
+.dip-spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.dsg-item {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--line);
+}
+
+.dsg-item:nth-child(odd) {
+    border-right: 1px solid var(--line);
+}
+
+/* 最後の1〜2行の下ボーダーを消す */
+.dsg-item:last-child,
+.dsg-item:nth-last-child(2):not(.dsg-item-wide) {
+    border-bottom: none;
+}
+
+.dsg-item-wide {
+    grid-column: span 2;
+    border-right: none !important;
+}
+
+.dsg-label {
+    background: #f5f6f9;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 9px 8px 9px 12px;
+    width: 70px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
+}
+
+.dsg-value {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
+}
+
+.dsg-value small {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted-light);
+    margin-left: 1px;
+}
+
+.dsg-good { color: var(--green); }
+.dsg-bad  { color: var(--red); }
+
+/* 問い合わせCTAボタン */
+.dip-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #d60009 0%, #9e0007 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: .03em;
+    padding: 16px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform .18s, box-shadow .18s, filter .18s;
+    box-shadow: 0 4px 16px rgba(200, 0, 10, .38), 0 1px 3px rgba(0, 0, 0, .12);
+    min-height: 54px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dip-cta-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.dip-cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(200, 0, 10, .46), 0 2px 6px rgba(0, 0, 0, .14);
+    color: #fff;
+    text-decoration: none;
+    filter: brightness(1.06);
+}
+
+.dip-cta-btn:active {
+    transform: translateY(0);
+    filter: brightness(.96);
+}
+
+.dip-cta-btn-muted {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+}
+
+.dip-cta-btn-muted:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .26);
+}
+
+/* SNSシェア */
+.dip-share {
+    display: flex;
+    gap: 8px;
+    margin-top: -4px;
+}
+
+/* ============================================================
+   車両カード ボディ改善
+   ============================================================ */
+
+.car-card-body {
+    padding: 14px 16px 15px;
+}
+
+.car-card h3 {
+    font-size: 15.5px;
+    font-weight: 900;
+    letter-spacing: -.015em;
+}
+
+.car-card-specs span {
+    background: #f2f4f7;
+    border: 1px solid #e0e4ea;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #5f6675;
+    padding: 3px 10px;
+}
+
+/* ============================================================
+   詳細ページ レスポンシブ
+   ============================================================ */
+
+@media (max-width: 860px) {
+    .detail-info-panel {
+        padding: 20px 18px;
+        gap: 14px;
+    }
+
+    .dip-car-name {
+        font-size: 1.4rem;
+    }
+
+    .dpc-value {
+        font-size: 2rem;
+    }
+
+    .dip-cta-btn {
+        font-size: 14px;
+        padding: 14px 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    /* 詳細2カラム → 1カラム */
+    .card-lg > div[style*="grid-template-columns"] {
+        display: block !important;
+    }
+
+    .card-lg > div > div:first-child {
+        border-right: none !important;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .dip-spec-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dip-fav-btn span:last-child {
+        display: none;
     }
 }

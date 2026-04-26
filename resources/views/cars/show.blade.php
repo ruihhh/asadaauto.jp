@@ -108,7 +108,7 @@
     <div class="card-lg" style="overflow:hidden;">
 
         {{-- メイン2カラム（画像 + 情報） --}}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+        <div style="display:grid;grid-template-columns:57% 43%;gap:0;">
 
             {{-- 左：画像ギャラリー --}}
             <div style="border-right:1px solid var(--line);">
@@ -147,115 +147,118 @@
             </div>
 
             {{-- 右：詳細情報 --}}
-            <div style="padding:24px;">
-                {{-- バッジ行 --}}
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-                    @if($car->status === 'available')
-                        <span class="status-badge status-badge-available">販売中</span>
-                    @else
-                        <span class="status-badge status-badge-default">
-                            {{ match($car->status) { 'reserved' => '商談中', 'sold' => '売約済', default => $car->status } }}
-                        </span>
-                    @endif
-                    @if($car->published_at && $car->published_at->diffInDays(now()) <= 7)
-                        <span class="badge-new">新着</span>
-                    @endif
-                    @if($car->featured)
-                        <span class="badge-featured">注目車両</span>
-                    @endif
-                </div>
+            <div class="detail-info-panel">
 
-                {{-- 車名 --}}
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div>
-                        <h1 style="margin:0 0 4px;font-size:clamp(1.3rem,2vw,1.8rem);font-weight:900;line-height:1.2;color:var(--text);">
-                            {{ $car->make }} {{ $car->model }}
-                        </h1>
-                        <p style="margin:0 0 4px;color:var(--muted);font-size:13px;">{{ $car->grade ?: '—' }}</p>
-                        <p style="margin:0;font-size:12px;color:var(--muted);">在庫番号: {{ $car->stock_no }}</p>
+                {{-- バッジ + お気に入り --}}
+                <div class="dip-top-row">
+                    <div class="dip-badges">
+                        @if($car->status === 'available')
+                            <span class="dip-badge dip-badge-sale">販売中</span>
+                        @elseif($car->status === 'reserved')
+                            <span class="dip-badge dip-badge-reserved">商談中</span>
+                        @else
+                            <span class="dip-badge dip-badge-sold">売約済</span>
+                        @endif
+                        @if($car->published_at && $car->published_at->diffInDays(now()) <= 7)
+                            <span class="dip-badge dip-badge-new">新着</span>
+                        @endif
+                        @if($car->featured)
+                            <span class="dip-badge dip-badge-featured">★ 注目</span>
+                        @endif
                     </div>
-                    {{-- お気に入りボタン --}}
                     <div x-data="favBtn({{ $car->id }})">
-                        <button @click="toggle" style="background:none;border:1px solid var(--line);border-radius:3px;padding:6px 12px;cursor:pointer;font-size:20px;line-height:1;">
-                            <span x-text="isFav ? '❤' : '🤍'"></span>
+                        <button @click="toggle" class="dip-fav-btn" :class="{ 'dip-fav-btn-active': isFav }">
+                            <span x-text="isFav ? '♥' : '♡'" style="font-size:16px;line-height:1;"></span>
+                            <span x-text="isFav ? 'お気に入り済' : 'お気に入り'" style="font-size:11px;"></span>
                         </button>
                     </div>
                 </div>
 
-                {{-- 価格 --}}
+                {{-- 車名 --}}
+                <div class="dip-title-block">
+                    <h1 class="dip-car-name">{{ $car->make }} {{ $car->model }}</h1>
+                    @if($car->grade)
+                    <p class="dip-grade">{{ $car->grade }}</p>
+                    @endif
+                    <p class="dip-stock-no">在庫番号：{{ strtoupper($car->stock_no) }}</p>
+                </div>
+
+                {{-- 価格カード --}}
                 @if($car->price_negotiable)
-                <div class="detail-price detail-price-negotiable">
-                    <span class="detail-price-negotiable-badge">応談</span>
-                    <span class="detail-price-negotiable-text">価格はお問い合わせください</span>
+                <div class="dip-price-card dip-price-card-oto">
+                    <p class="dpc-oto-sub">価格についてはお気軽にお問い合わせください</p>
+                    <p class="dpc-oto-main">価格応談</p>
                 </div>
                 @else
-                <div class="detail-price">
-                    <span class="detail-price-label">支払総額</span>
-                    <span class="detail-price-value">{{ number_format($car->price) }}</span>
-                    <span class="detail-price-unit">円（税込）</span>
+                <div class="dip-price-card">
+                    <p class="dpc-eyebrow">支払総額（税込）</p>
+                    <div class="dpc-main-row">
+                        <span class="dpc-yen">¥</span>
+                        <span class="dpc-value">{{ number_format($car->price) }}</span>
+                    </div>
+                    @if($car->base_price)
+                    <p class="dpc-base">車両本体価格&ensp;{{ number_format($car->base_price) }}円</p>
+                    @endif
                 </div>
-                @if($car->base_price)
-                <div class="detail-base-price">
-                    <span class="detail-base-price-label">車両本体価格</span>
-                    <span class="detail-base-price-value">{{ number_format($car->base_price) }}円</span>
-                </div>
-                @endif
                 @endif
 
                 {{-- スペックグリッド --}}
-                <div class="spec-grid">
-                    <div class="spec-item">
-                        <span class="spec-label">年式</span>
-                        <span class="spec-value">{{ $car->model_year }}年</span>
+                <div class="dip-spec-grid">
+                    <div class="dsg-item">
+                        <span class="dsg-label">年式</span>
+                        <span class="dsg-value">{{ $car->model_year }}年</span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">走行距離</span>
-                        <span class="spec-value">{{ number_format($car->mileage) }} km</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">走行距離</span>
+                        <span class="dsg-value">{{ number_format($car->mileage) }}<small> km</small></span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">ボディタイプ</span>
-                        <span class="spec-value">{{ $car->body_type }}</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">ボディ</span>
+                        <span class="dsg-value">{{ $car->body_type }}</span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">燃料</span>
-                        <span class="spec-value">{{ $car->fuel_type }}</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">燃料</span>
+                        <span class="dsg-value">{{ $car->fuel_type }}</span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">変速機</span>
-                        <span class="spec-value">{{ $car->transmission }}</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">変速機</span>
+                        <span class="dsg-value">{{ $car->transmission }}</span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">車体色</span>
-                        <span class="spec-value">{{ $car->color ?: '—' }}</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">車体色</span>
+                        <span class="dsg-value">{{ $car->color ?: '—' }}</span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">事故歴</span>
-                        <span class="spec-value">{{ $car->accident_count > 0 ? $car->accident_count . '回' : 'なし' }}</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">事故歴</span>
+                        <span class="dsg-value {{ $car->accident_count > 0 ? 'dsg-bad' : 'dsg-good' }}">
+                            {{ $car->accident_count > 0 ? $car->accident_count . '回あり' : 'なし' }}
+                        </span>
                     </div>
-                    <div class="spec-item">
-                        <span class="spec-label">整備記録</span>
-                        <span class="spec-value">{{ $car->has_service_record ? 'あり' : 'なし' }}</span>
+                    <div class="dsg-item">
+                        <span class="dsg-label">整備記録</span>
+                        <span class="dsg-value {{ $car->has_service_record ? 'dsg-good' : '' }}">
+                            {{ $car->has_service_record ? 'あり' : 'なし' }}
+                        </span>
                     </div>
                     @if($car->inspection_expiry)
-                    <div class="spec-item" style="grid-column: span 2;">
-                        <span class="spec-label">車検期限</span>
-                        <span class="spec-value">{{ $car->inspection_expiry->format('Y年m月') }}</span>
+                    <div class="dsg-item dsg-item-wide">
+                        <span class="dsg-label">車検期限</span>
+                        <span class="dsg-value {{ $car->inspection_expiry->isFuture() ? 'dsg-good' : '' }}">
+                            {{ $car->inspection_expiry->format('Y年m月') }}まで
+                        </span>
                     </div>
                     @endif
                 </div>
 
-                {{-- 問い合わせボタン --}}
+                {{-- CTAボタン --}}
                 @if($car->status === 'available')
-                <a href="{{ route('contact.index', ['stock_no' => $car->stock_no]) }}"
-                   class="btn-primary"
-                   style="width:100%;justify-content:center;margin-top:4px;">
-                    この車両について問い合わせる ›
+                <a href="{{ route('contact.index', ['stock_no' => $car->stock_no]) }}" class="dip-cta-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+                    この車両について問い合わせる
                 </a>
                 @else
-                <a href="{{ route('cars.index', ['make' => $car->make]) }}"
-                   class="btn-primary"
-                   style="width:100%;justify-content:center;margin-top:4px;background:var(--muted);">
-                    同メーカーの在庫を見る ›
+                <a href="{{ route('cars.index', ['make' => $car->make]) }}" class="dip-cta-btn dip-cta-btn-muted">
+                    同メーカーの在庫を見る →
                 </a>
                 @endif
 
@@ -264,12 +267,13 @@
                     $shareUrl = urlencode(request()->url());
                     $shareText = urlencode($car->make . ' ' . $car->model . ' ' . ($car->price_negotiable ? '応談' : number_format($car->price) . '円'));
                 @endphp
-                <div style="margin-top:12px;display:flex;gap:8px;">
+                <div class="dip-share">
                     <a href="https://twitter.com/intent/tweet?url={{ $shareUrl }}&text={{ $shareText }}"
                        target="_blank" rel="noopener" class="btn-share btn-share-x">𝕏 シェア</a>
                     <a href="https://social-plugins.line.me/lineit/share?url={{ $shareUrl }}"
                        target="_blank" rel="noopener" class="btn-share btn-share-line">LINE シェア</a>
                 </div>
+
             </div>
         </div>
 
@@ -352,6 +356,33 @@
                 @endif
             </div>
         </div>
+
+        {{-- 装備仕様 --}}
+        @if($car->equipment)
+        <div class="detail-section">
+            <h3 class="detail-section-title">装備仕様</h3>
+            <div class="equipment-categories">
+                @foreach(\App\Models\Car::EQUIPMENT_CATEGORIES as $category => $items)
+                @php
+                    $matched = array_filter($items, fn($item) => in_array($item, $car->equipment));
+                    $hasAny = count($matched) > 0;
+                @endphp
+                <div class="equipment-category">
+                    <p class="equipment-category-title">{{ $category }}</p>
+                    <div class="equipment-grid">
+                        @foreach($items as $item)
+                        @php $equipped = in_array($item, $car->equipment); @endphp
+                        <div class="equipment-item {{ $equipped ? 'equipment-item-on' : 'equipment-item-off' }}">
+                            <span class="equipment-item-icon">{{ $equipped ? '✓' : '—' }}</span>
+                            <span class="equipment-item-label">{{ $item }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         {{-- 購入の流れ --}}
         <div class="detail-section">

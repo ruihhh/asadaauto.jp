@@ -70,6 +70,8 @@ class CarController extends Controller
             'accident_count' => 'integer|min:0|max:99',
             'has_service_record' => 'boolean',
             'inspection_expiry' => 'nullable|date',
+            'equipment' => 'nullable|array',
+            'equipment.*' => 'string',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
             'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
             'featured' => 'boolean',
@@ -81,6 +83,7 @@ class CarController extends Controller
         $validated['price_negotiable'] = $request->boolean('price_negotiable');
         $validated['has_service_record'] = $request->has('has_service_record');
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
+        $validated['equipment'] = $request->input('equipment', []);
         if ($validated['price_negotiable']) {
             $validated['price'] = null;
             $validated['base_price'] = null;
@@ -131,6 +134,8 @@ class CarController extends Controller
             'accident_count' => 'integer|min:0|max:99',
             'has_service_record' => 'boolean',
             'inspection_expiry' => 'nullable|date',
+            'equipment' => 'nullable|array',
+            'equipment.*' => 'string',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
             'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
             'featured' => 'boolean',
@@ -142,6 +147,7 @@ class CarController extends Controller
         $validated['price_negotiable'] = $request->boolean('price_negotiable');
         $validated['has_service_record'] = $request->has('has_service_record');
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
+        $validated['equipment'] = $request->input('equipment', []);
         if ($validated['price_negotiable']) {
             $validated['price'] = null;
             $validated['base_price'] = null;

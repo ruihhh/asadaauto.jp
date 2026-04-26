@@ -520,6 +520,34 @@
                             </div>
                         </section>
 
+                    {{-- 装備仕様 --}}
+                    <section id="sec-equipment" class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                装備仕様
+                            </h3>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            @php $currentEquipment = old('equipment', $car->equipment ?? []); @endphp
+                            @foreach(\App\Models\Car::EQUIPMENT_CATEGORIES as $category => $items)
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{ $category }}</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    @foreach($items as $item)
+                                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                                        <input type="checkbox" name="equipment[]" value="{{ $item }}"
+                                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                               @checked(in_array($item, $currentEquipment))>
+                                        <span class="text-sm text-gray-700">{{ $item }}</span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </section>
+
                     </div>{{-- /メインフォーム --}}
 
             </form>{{-- /car-edit-form ここで閉じる（サイドバーのネスト防止） --}}
@@ -583,7 +611,8 @@
                                     ['id' => 'sec-spec',    'label' => 'スペック'],
                                     ['id' => 'sec-history', 'label' => '車両履歴'],
                                     ['id' => 'sec-images',  'label' => '画像管理'],
-                                    ['id' => 'sec-desc',    'label' => '詳細説明'],
+                                    ['id' => 'sec-desc',      'label' => '詳細説明'],
+                                    ['id' => 'sec-equipment', 'label' => '装備仕様'],
                                 ] as $nav)
                                     <a href="#{{ $nav['id'] }}"
                                        class="block text-sm text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-md transition">
