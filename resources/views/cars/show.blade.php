@@ -113,12 +113,12 @@
             {{-- 左：画像ギャラリー --}}
             <div style="border-right:1px solid var(--line);">
                 @if($allImages->isNotEmpty())
-                <div x-data="{ current: 0, images: @json($allImages->values()) }" class="detail-gallery">
-                    <div class="detail-gallery-main" style="height:340px;">
+                <div x-data='{ current: 0, images: @json($allImages->values()) }' class="detail-gallery">
+                    <div class="detail-gallery-main">
                         <template x-for="(src, i) in images" :key="i">
                             <img :src="src" :alt="`{{ $car->make }} {{ $car->model }} {{ $car->model_year }}年式 - 画像${i + 1}`"
                                  x-show="current === i"
-                                 style="width:100%;height:100%;object-fit:cover;display:block;">
+                                 style="width:100%;height:auto;display:block;">
                         </template>
                         @if($allImages->count() > 1)
                         <button @click="current = (current - 1 + images.length) % images.length" class="gallery-arrow gallery-arrow-left">&#8249;</button>
