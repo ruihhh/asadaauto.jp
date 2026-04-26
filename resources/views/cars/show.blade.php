@@ -2,6 +2,7 @@
 
 @section('title', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式｜' . ($car->price_negotiable ? '応談' : number_format($car->price) . '円'))
 @php $priceLabel = $car->price_negotiable ? '応談' : number_format($car->price) . '円'; @endphp
+@section('meta_robots', $car->status === 'available' ? 'index, follow' : 'noindex, follow')
 @section('meta_description', $car->make . ' ' . $car->model . '（' . $car->model_year . '年式・走行' . number_format($car->mileage) . 'km）' . $priceLabel . '。' . ($car->body_type ?? '') . '・' . ($car->transmission ?? '') . '・整備履歴' . ($car->has_service_record ? 'あり' : 'なし') . '。兵庫県尼崎市のアサダオートサポート。')
 @section('og_type', 'product')
 @section('og_title', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式 ' . $priceLabel . ' | ' . config('app.name'))
@@ -44,7 +45,9 @@
         "@type": "Offer",
         "url": "{{ route('cars.show', $car) }}",
         "priceCurrency": "JPY",
+        @if(!$car->price_negotiable && $car->price !== null)
         "price": {{ $car->price }},
+        @endif
         "availability": "{{ $car->status === 'available' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut' }}",
         "seller": {
             "@type": "AutoDealer",
@@ -73,6 +76,28 @@
 @section('content')
 <div class="container" style="padding-top:20px;padding-bottom:40px;">
 
+    {{-- 売約済み・商談中バナー --}}
+    @if($car->status !== 'available')
+    <div class="sold-notice">
+        <div class="sold-notice-icon">
+            {{ $car->status === 'sold' ? '🚗' : '💬' }}
+        </div>
+        <div class="sold-notice-body">
+            <p class="sold-notice-title">
+                {{ $car->status === 'sold' ? 'この車両は売約済みです' : 'この車両は現在商談中です' }}
+            </p>
+            <p class="sold-notice-sub">
+                {{ $car->status === 'sold'
+                    ? '同メーカーの在庫や他の車両もぜひご覧ください。'
+                    : '商談が成立しない場合、再度販売することがあります。お問い合わせください。' }}
+            </p>
+        </div>
+        <a href="{{ route('cars.index', ['make' => $car->make]) }}" class="sold-notice-btn">
+            他の在庫を見る
+        </a>
+    </div>
+    @endif
+
     {{-- パンくず --}}
     <div class="breadcrumb">
         <span><a href="{{ route('home') }}">ホーム</a></span>
@@ -91,7 +116,7 @@
                 <div x-data="{ current: 0, images: @json($allImages->values()) }" class="detail-gallery">
                     <div class="detail-gallery-main" style="height:340px;">
                         <template x-for="(src, i) in images" :key="i">
-                            <img :src="src" :alt="'車両画像 ' + (i + 1)"
+                            <img :src="src" :alt="`{{ $car->make }} {{ $car->model }} {{ $car->model_year }}年式 - 画像${i + 1}`"
                                  x-show="current === i"
                                  style="width:100%;height:100%;object-fit:cover;display:block;">
                         </template>
@@ -220,11 +245,19 @@
                 </div>
 
                 {{-- 問い合わせボタン --}}
+                @if($car->status === 'available')
                 <a href="{{ route('contact.index', ['stock_no' => $car->stock_no]) }}"
                    class="btn-primary"
                    style="width:100%;justify-content:center;margin-top:4px;">
                     この車両について問い合わせる ›
                 </a>
+                @else
+                <a href="{{ route('cars.index', ['make' => $car->make]) }}"
+                   class="btn-primary"
+                   style="width:100%;justify-content:center;margin-top:4px;background:var(--muted);">
+                    同メーカーの在庫を見る ›
+                </a>
+                @endif
 
                 {{-- SNSシェア --}}
                 @php
@@ -359,6 +392,7 @@
         </div>
 
         {{-- 問い合わせCTA --}}
+        @if($car->status === 'available')
         <div class="detail-cta">
             <div class="detail-cta-inner">
                 <div class="detail-cta-text">
@@ -372,6 +406,21 @@
                 </div>
             </div>
         </div>
+        @else
+        <div class="detail-cta" style="background:var(--bg);">
+            <div class="detail-cta-inner">
+                <div class="detail-cta-text">
+                    <p class="detail-cta-title">他の在庫もご覧ください</p>
+                    <p class="detail-cta-sub">{{ $car->make }}の他の車両や、全在庫一覧からお探しいただけます</p>
+                </div>
+                <div class="detail-cta-actions">
+                    <a href="{{ route('cars.index', ['make' => $car->make]) }}" class="btn-primary detail-cta-btn">
+                        在庫一覧を見る
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
 
         {{-- 安心ポイント --}}
         <div class="detail-section">

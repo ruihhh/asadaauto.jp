@@ -9,7 +9,7 @@ class SitemapController extends Controller
 {
     public function index(): Response
     {
-        $cars = Car::query()->publicInventory()->latest('updated_at')->get(['id', 'updated_at']);
+        $cars = Car::query()->publicInventory()->latest('updated_at')->get(['id', 'slug', 'updated_at']);
 
         $content = view('sitemap', compact('cars'))->render();
 

@@ -86,17 +86,17 @@ class CarController extends Controller
             $validated['base_price'] = null;
         }
 
-        if ($request->hasFile('image')) {
-            $validated['image_path'] = $this->storeImage($request->file('image'));
-        }
-
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
 
         $car = Car::create($validated);
 
+        if ($request->hasFile('image')) {
+            $car->update(['image_path' => $this->storeImage($request->file('image'), $car->id)]);
+        }
+
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $i => $file) {
-                $path = $this->storeImage($file);
+                $path = $this->storeImage($file, $car->id);
                 $car->images()->create(['path' => $path, 'sort_order' => $i]);
             }
         }
@@ -149,7 +149,7 @@ class CarController extends Controller
 
         if ($request->hasFile('image')) {
             $this->deleteImage($car->image_path);
-            $validated['image_path'] = $this->storeImage($request->file('image'));
+            $validated['image_path'] = $this->storeImage($request->file('image'), $car->id);
         }
 
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
@@ -159,7 +159,7 @@ class CarController extends Controller
         if ($request->hasFile('images')) {
             $nextOrder = $car->images()->max('sort_order') + 1;
             foreach ($request->file('images') as $i => $file) {
-                $path = $this->storeImage($file);
+                $path = $this->storeImage($file, $car->id);
                 $car->images()->create(['path' => $path, 'sort_order' => $nextOrder + $i]);
             }
         }
@@ -204,21 +204,27 @@ class CarController extends Controller
         return rtrim(config('filesystems.images_root', public_path('images')), '/');
     }
 
-    private function storeImage(\Illuminate\Http\UploadedFile $file): string
+    private function storeImage(\Illuminate\Http\UploadedFile $file, int $carId): string
     {
-        $dir = $this->imagesRoot() . '/cars';
+        $dir = $this->imagesRoot() . '/cars/' . $carId;
         if (! is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
         $filename = $file->hashName();
         $file->move($dir, $filename);
-        return 'cars/' . $filename;
+        return 'cars/' . $carId . '/' . $filename;
     }
 
     private function deleteImage(?string $path): void
     {
-        if ($path) {
-            @unlink($this->imagesRoot() . '/' . $path);
+        if (! $path) {
+            return;
+        }
+        $fullPath = $this->imagesRoot() . '/' . $path;
+        @unlink($fullPath);
+        $dir = dirname($fullPath);
+        if (is_dir($dir) && count(array_diff(scandir($dir), ['.', '..'])) === 0) {
+            @rmdir($dir);
         }
     }
 

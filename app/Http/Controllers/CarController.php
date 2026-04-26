@@ -90,8 +90,6 @@ class CarController extends Controller
 
     public function show(Car $car): View
     {
-        abort_unless($car->status === 'available' || auth()->check(), 404);
-
         $car->load('images');
 
         $relatedCars = Car::query()
