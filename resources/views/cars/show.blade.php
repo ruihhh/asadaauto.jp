@@ -1,10 +1,11 @@
 @extends('layouts.site')
 
-@section('title', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式｜' . number_format($car->price) . '円')
-@section('meta_description', $car->make . ' ' . $car->model . '（' . $car->model_year . '年式・走行' . number_format($car->mileage) . 'km）総額' . number_format($car->price) . '円。' . ($car->body_type ?? '') . '・' . ($car->transmission ?? '') . '・整備履歴' . ($car->has_service_record ? 'あり' : 'なし') . '。兵庫県尼崎市のアサダオートサポート。')
+@section('title', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式｜' . ($car->price_negotiable ? '応談' : number_format($car->price) . '円'))
+@php $priceLabel = $car->price_negotiable ? '応談' : number_format($car->price) . '円'; @endphp
+@section('meta_description', $car->make . ' ' . $car->model . '（' . $car->model_year . '年式・走行' . number_format($car->mileage) . 'km）' . $priceLabel . '。' . ($car->body_type ?? '') . '・' . ($car->transmission ?? '') . '・整備履歴' . ($car->has_service_record ? 'あり' : 'なし') . '。兵庫県尼崎市のアサダオートサポート。')
 @section('og_type', 'product')
-@section('og_title', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式 ' . number_format($car->price) . '円 | ' . config('app.name'))
-@section('og_description', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式・走行' . number_format($car->mileage) . 'km・総額' . number_format($car->price) . '円。整備履歴' . ($car->has_service_record ? 'あり' : 'なし') . '。')
+@section('og_title', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式 ' . $priceLabel . ' | ' . config('app.name'))
+@section('og_description', $car->make . ' ' . $car->model . ' ' . $car->model_year . '年式・走行' . number_format($car->mileage) . 'km・' . $priceLabel . '。整備履歴' . ($car->has_service_record ? 'あり' : 'なし') . '。')
 @php
     $allImages = collect();
     if ($car->image_path) $allImages->push('/images/' . $car->image_path);
@@ -157,6 +158,12 @@
                 </div>
 
                 {{-- 価格 --}}
+                @if($car->price_negotiable)
+                <div class="detail-price detail-price-negotiable">
+                    <span class="detail-price-negotiable-badge">応談</span>
+                    <span class="detail-price-negotiable-text">価格はお問い合わせください</span>
+                </div>
+                @else
                 <div class="detail-price">
                     <span class="detail-price-label">支払総額</span>
                     <span class="detail-price-value">{{ number_format($car->price) }}</span>
@@ -167,6 +174,7 @@
                     <span class="detail-base-price-label">車両本体価格</span>
                     <span class="detail-base-price-value">{{ number_format($car->base_price) }}円</span>
                 </div>
+                @endif
                 @endif
 
                 {{-- スペックグリッド --}}
@@ -221,7 +229,7 @@
                 {{-- SNSシェア --}}
                 @php
                     $shareUrl = urlencode(request()->url());
-                    $shareText = urlencode($car->make . ' ' . $car->model . ' ' . number_format($car->price) . '円');
+                    $shareText = urlencode($car->make . ' ' . $car->model . ' ' . ($car->price_negotiable ? '応談' : number_format($car->price) . '円'));
                 @endphp
                 <div style="margin-top:12px;display:flex;gap:8px;">
                     <a href="https://twitter.com/intent/tweet?url={{ $shareUrl }}&text={{ $shareText }}"
@@ -243,7 +251,7 @@
         @endif
 
         {{-- 価格内訳 --}}
-        @if($car->base_price)
+        @if(!$car->price_negotiable && $car->base_price)
         <div class="detail-section">
             <h3 class="detail-section-title">価格内訳</h3>
             <table class="price-table">
@@ -430,9 +438,13 @@
                     <div class="car-card-body">
                         <h3>{{ $related->make }} {{ $related->model }}</h3>
                         <p class="grade">{{ $related->grade ?: '—' }}</p>
+                        @if($related->price_negotiable)
+                        <p class="price-negotiable-stamp">応 談</p>
+                        @else
                         <p class="price">{{ number_format($related->price) }}</p>
                         @if($related->base_price)
                         <p class="car-card-base-price">本体 {{ number_format($related->base_price) }}円</p>
+                        @endif
                         @endif
                         <dl>
                             <div><dt>年式</dt><dd>{{ $related->model_year }}年</dd></div>

@@ -23,6 +23,7 @@ class Car extends Model
         'mileage',
         'price',
         'base_price',
+        'price_negotiable',
         'color',
         'location',
         'description',
@@ -42,6 +43,7 @@ class Car extends Model
     {
         return [
             'featured' => 'boolean',
+            'price_negotiable' => 'boolean',
             'has_service_record' => 'boolean',
             'published_at' => 'datetime',
             'inspection_expiry' => 'date',

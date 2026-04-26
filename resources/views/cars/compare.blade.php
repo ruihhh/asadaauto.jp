@@ -43,7 +43,7 @@
                 </tr>
                 @php
                 $rows = [
-                    '価格' => fn($c) => number_format($c->price) . '円',
+                    '価格' => fn($c) => $c->price_negotiable ? '応談' : number_format($c->price) . '円',
                     '年式' => fn($c) => $c->model_year . '年',
                     '走行距離' => fn($c) => number_format($c->mileage) . 'km',
                     'ボディタイプ' => fn($c) => $c->body_type,

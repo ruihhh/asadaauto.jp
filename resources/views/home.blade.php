@@ -350,11 +350,18 @@
                             @endif
                         </div>
                         <div class="car-card-image-footer">
+                            @if($car->price_negotiable)
+                            <div class="cpo-negotiable-block">
+                                <span class="cpo-oto">応 談</span>
+                                <span class="cpo-oto-sub">価格はお問い合わせください</span>
+                            </div>
+                            @else
                             <p class="car-price-overlay">
                                 <span class="cpo-label">総額</span>
                                 <span class="cpo-num">{{ number_format($car->price) }}</span>
                                 <span class="cpo-unit">円</span>
                             </p>
+                            @endif
                         </div>
                     </div>
                     <div class="car-card-body">
@@ -580,7 +587,7 @@
                         </div>
                         <div class="ranking-body">
                             <p class="ranking-name">{{ $car->make }} {{ $car->model }}</p>
-                            <p class="ranking-price">{{ number_format($car->price) }}円</p>
+                            <p class="ranking-price">{{ $car->price_negotiable ? '応談' : number_format($car->price) . '円' }}</p>
                             <p class="ranking-spec">{{ $car->model_year }}年 / {{ number_format($car->mileage) }}km</p>
                         </div>
                     </a>
@@ -607,7 +614,7 @@
                         </div>
                         <div class="ranking-body">
                             <p class="ranking-name">{{ $car->make }} {{ $car->model }}</p>
-                            <p class="ranking-price">{{ number_format($car->price) }}円</p>
+                            <p class="ranking-price">{{ $car->price_negotiable ? '応談' : number_format($car->price) . '円' }}</p>
                             <p class="ranking-spec">{{ $car->model_year }}年 / {{ number_format($car->mileage) }}km</p>
                         </div>
                     </a>
@@ -653,11 +660,18 @@
                             @endif
                         </div>
                         <div class="car-card-image-footer">
+                            @if($car->price_negotiable)
+                            <div class="cpo-negotiable-block">
+                                <span class="cpo-oto">応 談</span>
+                                <span class="cpo-oto-sub">価格はお問い合わせください</span>
+                            </div>
+                            @else
                             <p class="car-price-overlay">
                                 <span class="cpo-label">総額</span>
                                 <span class="cpo-num">{{ number_format($car->price) }}</span>
                                 <span class="cpo-unit">円</span>
                             </p>
+                            @endif
                         </div>
                     </div>
                     <div class="car-card-body">

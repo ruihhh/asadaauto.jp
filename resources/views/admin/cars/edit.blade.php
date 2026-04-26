@@ -73,26 +73,61 @@
                                     <x-input-error class="mt-1.5" :messages="$errors->get('stock_no')" />
                                 </div>
 
-                                <div>
+                                <div x-data="{ statusVal: '{{ old('status', $car->status) }}' }">
                                     <x-input-label value="ステータス *" />
-                                    <div class="mt-1 flex rounded-lg overflow-hidden border border-gray-300 divide-x divide-gray-300">
-                                        @foreach([
-                                            ['value' => 'available', 'label' => '販売中', 'active' => 'text-green-700 bg-green-50 ring-1 ring-green-300'],
-                                            ['value' => 'reserved',  'label' => '商談中', 'active' => 'text-yellow-700 bg-yellow-50 ring-1 ring-yellow-300'],
-                                            ['value' => 'sold',      'label' => '売約済', 'active' => 'text-gray-700 bg-gray-200 ring-1 ring-gray-300'],
-                                        ] as $s)
-                                            <label class="flex-1 relative cursor-pointer">
-                                                <input type="radio" name="status" value="{{ $s['value'] }}"
-                                                       class="sr-only peer"
-                                                       @if(old('status', $car->status) === $s['value']) checked @endif
-                                                       @change="isDirty = true">
-                                                <span class="block text-center text-xs font-semibold py-2.5 transition
-                                                             text-gray-500 hover:bg-gray-50
-                                                             peer-checked:{{ $s['active'] }}">
-                                                    {{ $s['label'] }}
-                                                </span>
-                                            </label>
-                                        @endforeach
+                                    <div class="mt-1 grid grid-cols-3 gap-2">
+
+                                        {{-- 販売中 --}}
+                                        <label class="cursor-pointer" @click="statusVal = 'available'; isDirty = true">
+                                            <input type="radio" name="status" value="available" class="sr-only"
+                                                   @if(old('status', $car->status) === 'available') checked @endif>
+                                            <span class="flex flex-col items-center gap-1.5 rounded-lg border-2 px-2 py-3 transition-all select-none"
+                                                  :class="statusVal === 'available'
+                                                      ? 'border-green-500 bg-green-50 shadow-sm'
+                                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'">
+                                                <svg class="w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                     :class="statusVal === 'available' ? 'text-green-600' : 'text-gray-300'">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span class="text-xs font-bold transition-colors"
+                                                      :class="statusVal === 'available' ? 'text-green-700' : 'text-gray-400'">販売中</span>
+                                            </span>
+                                        </label>
+
+                                        {{-- 商談中 --}}
+                                        <label class="cursor-pointer" @click="statusVal = 'reserved'; isDirty = true">
+                                            <input type="radio" name="status" value="reserved" class="sr-only"
+                                                   @if(old('status', $car->status) === 'reserved') checked @endif>
+                                            <span class="flex flex-col items-center gap-1.5 rounded-lg border-2 px-2 py-3 transition-all select-none"
+                                                  :class="statusVal === 'reserved'
+                                                      ? 'border-yellow-400 bg-yellow-50 shadow-sm'
+                                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'">
+                                                <svg class="w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                     :class="statusVal === 'reserved' ? 'text-yellow-500' : 'text-gray-300'">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                                </svg>
+                                                <span class="text-xs font-bold transition-colors"
+                                                      :class="statusVal === 'reserved' ? 'text-yellow-700' : 'text-gray-400'">商談中</span>
+                                            </span>
+                                        </label>
+
+                                        {{-- 売約済 --}}
+                                        <label class="cursor-pointer" @click="statusVal = 'sold'; isDirty = true">
+                                            <input type="radio" name="status" value="sold" class="sr-only"
+                                                   @if(old('status', $car->status) === 'sold') checked @endif>
+                                            <span class="flex flex-col items-center gap-1.5 rounded-lg border-2 px-2 py-3 transition-all select-none"
+                                                  :class="statusVal === 'sold'
+                                                      ? 'border-gray-500 bg-gray-100 shadow-sm'
+                                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'">
+                                                <svg class="w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                     :class="statusVal === 'sold' ? 'text-gray-600' : 'text-gray-300'">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                </svg>
+                                                <span class="text-xs font-bold transition-colors"
+                                                      :class="statusVal === 'sold' ? 'text-gray-700' : 'text-gray-400'">売約済</span>
+                                            </span>
+                                        </label>
+
                                     </div>
                                     <x-input-error class="mt-1.5" :messages="$errors->get('status')" />
                                 </div>
@@ -139,19 +174,21 @@
                                     <x-input-error class="mt-1.5" :messages="$errors->get('grade')" />
                                 </div>
 
-                                <div>
-                                    @php $bodyTypes = ['セダン','SUV','ミニバン','ハッチバック','クーペ','コンパクト','軽自動車','ステーションワゴン','トラック','その他']; @endphp
-                                    <x-input-label for="body_type" value="ボディタイプ *" />
-                                    <select id="body_type" name="body_type" @change="isDirty = true"
-                                            class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
-                                        <option value="">選択してください</option>
-                                        @foreach($bodyTypes as $bt)
-                                            <option value="{{ $bt }}" @selected(old('body_type', $car->body_type) === $bt)>{{ $bt }}</option>
+                                <div class="sm:col-span-2" x-data="{ bodyTypeVal: '{{ old('body_type', $car->body_type) }}' }">
+                                    <x-input-label value="ボディタイプ *" />
+                                    <input type="hidden" name="body_type" :value="bodyTypeVal">
+                                    <div class="mt-1 grid grid-cols-5 gap-2">
+                                        @foreach([['セダン','セダン'],['SUV','SUV'],['ミニバン','ミニバン'],['HB','ハッチバック'],['クーペ','クーペ'],['コンパクト','コンパクト'],['軽自動車','軽自動車'],['ワゴン','ステーションワゴン'],['トラック','トラック'],['その他','その他']] as [$label, $value])
+                                        <button type="button"
+                                                @click="bodyTypeVal = '{{ $value }}'; isDirty = true"
+                                                class="flex items-center justify-center rounded-lg border-2 py-2.5 px-1 text-xs font-semibold text-center min-h-[44px] transition-all select-none"
+                                                :class="bodyTypeVal === '{{ $value }}'
+                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                    : 'border-gray-200 bg-white text-gray-500 hover:border-indigo-300 hover:bg-indigo-50'">
+                                            {{ $label }}
+                                        </button>
                                         @endforeach
-                                        @if($car->body_type && !in_array($car->body_type, $bodyTypes))
-                                            <option value="{{ $car->body_type }}" @selected(true)>{{ $car->body_type }}</option>
-                                        @endif
-                                    </select>
+                                    </div>
                                     <x-input-error class="mt-1.5" :messages="$errors->get('body_type')" />
                                 </div>
 
@@ -180,29 +217,44 @@
                                 <h3 class="text-sm font-semibold text-gray-700">スペック</h3>
                             </div>
                             <div class="p-6 grid grid-cols-2 sm:grid-cols-3 gap-5">
-                                <div>
-                                    <x-input-label for="price" value="支払総額（税込）*" />
-                                    <div class="relative mt-1">
-                                        <x-text-input id="price" name="price" type="number" min="0"
-                                                      class="block w-full pr-8 text-sm"
-                                                      value="{{ old('price', $car->price) }}" required
-                                                      @input="updatePriceDisplay($el.value); isDirty = true" />
-                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">円</span>
+                                <div x-data="{ negotiable: {{ old('price_negotiable', $car->price_negotiable) ? 'true' : 'false' }} }">
+                                    <x-input-label value="価格" />
+                                    <label class="flex items-center gap-2 mt-1 mb-2 cursor-pointer select-none">
+                                        <input type="checkbox" name="price_negotiable" value="1"
+                                               x-model="negotiable" @change="isDirty = true"
+                                               {{ old('price_negotiable', $car->price_negotiable) ? 'checked' : '' }}
+                                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <span class="text-xs font-semibold text-gray-700">応談にする</span>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 border border-amber-300">応談</span>
+                                    </label>
+                                    <div x-show="!negotiable" x-cloak class="space-y-3">
+                                        <div>
+                                            <x-input-label for="price" value="支払総額（税込）*" />
+                                            <div class="relative mt-1">
+                                                <x-text-input id="price" name="price" type="number" min="0"
+                                                              class="block w-full pr-8 text-sm"
+                                                              value="{{ old('price', $car->price) }}"
+                                                              @input="updatePriceDisplay($el.value); isDirty = true" />
+                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">円</span>
+                                            </div>
+                                            <p class="mt-1 text-xs text-indigo-600 font-medium h-4" x-text="priceDisplay"></p>
+                                            <x-input-error class="mt-0.5" :messages="$errors->get('price')" />
+                                        </div>
+                                        <div>
+                                            <x-input-label for="base_price" value="車両本体価格" />
+                                            <div class="relative mt-1">
+                                                <x-text-input id="base_price" name="base_price" type="number" min="0"
+                                                              class="block w-full pr-8 text-sm"
+                                                              value="{{ old('base_price', $car->base_price) }}"
+                                                              @change="isDirty = true" />
+                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">円</span>
+                                            </div>
+                                            <x-input-error class="mt-0.5" :messages="$errors->get('base_price')" />
+                                        </div>
                                     </div>
-                                    <p class="mt-1 text-xs text-indigo-600 font-medium h-4" x-text="priceDisplay"></p>
-                                    <x-input-error class="mt-0.5" :messages="$errors->get('price')" />
-                                </div>
-
-                                <div>
-                                    <x-input-label for="base_price" value="車両本体価格" />
-                                    <div class="relative mt-1">
-                                        <x-text-input id="base_price" name="base_price" type="number" min="0"
-                                                      class="block w-full pr-8 text-sm"
-                                                      value="{{ old('base_price', $car->base_price) }}"
-                                                      @change="isDirty = true" />
-                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">円</span>
+                                    <div x-show="negotiable" x-cloak>
+                                        <p class="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded px-2 py-1.5">価格は「応談」として表示されます</p>
                                     </div>
-                                    <x-input-error class="mt-0.5" :messages="$errors->get('base_price')" />
                                 </div>
 
                                 <div>
@@ -230,35 +282,48 @@
                                     <x-input-error class="mt-1.5" :messages="$errors->get('mileage')" />
                                 </div>
 
-                                <div>
-                                    @php $transmissions = ['AT','CVT','MT','AMT','DCT']; @endphp
-                                    <x-input-label for="transmission" value="トランスミッション *" />
-                                    <select id="transmission" name="transmission" @change="isDirty = true"
-                                            class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
-                                        <option value="">選択</option>
-                                        @foreach($transmissions as $t)
-                                            <option value="{{ $t }}" @selected(old('transmission', $car->transmission) === $t)>{{ $t }}</option>
+                                <div x-data="{ transmissionVal: '{{ old('transmission', $car->transmission) }}' }">
+                                    <x-input-label value="トランスミッション *" />
+                                    <input type="hidden" name="transmission" :value="transmissionVal">
+                                    <div class="mt-1 flex gap-1.5">
+                                        @foreach(['AT','CVT','MT','AMT','DCT'] as $t)
+                                        <button type="button"
+                                                @click="transmissionVal = '{{ $t }}'; isDirty = true"
+                                                class="flex-1 flex items-center justify-center rounded-lg border-2 py-2 text-xs font-bold transition-all select-none"
+                                                :class="transmissionVal === '{{ $t }}'
+                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                    : 'border-gray-200 bg-white text-gray-500 hover:border-indigo-300 hover:bg-indigo-50'">
+                                            {{ $t }}
+                                        </button>
                                         @endforeach
-                                        @if($car->transmission && !in_array($car->transmission, $transmissions))
-                                            <option value="{{ $car->transmission }}" @selected(true)>{{ $car->transmission }}</option>
-                                        @endif
-                                    </select>
+                                    </div>
                                     <x-input-error class="mt-1.5" :messages="$errors->get('transmission')" />
                                 </div>
 
-                                <div>
-                                    @php $fuelTypes = ['ガソリン','ディーゼル','ハイブリッド','プラグインハイブリッド','電気','LPG']; @endphp
-                                    <x-input-label for="fuel_type" value="燃料 *" />
-                                    <select id="fuel_type" name="fuel_type" @change="isDirty = true"
-                                            class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
-                                        <option value="">選択</option>
-                                        @foreach($fuelTypes as $f)
-                                            <option value="{{ $f }}" @selected(old('fuel_type', $car->fuel_type) === $f)>{{ $f }}</option>
+                                <div x-data="{ fuelTypeVal: '{{ old('fuel_type', $car->fuel_type) }}' }">
+                                    <x-input-label value="燃料 *" />
+                                    <input type="hidden" name="fuel_type" :value="fuelTypeVal">
+                                    <div class="mt-1 grid grid-cols-3 gap-1.5">
+                                        @foreach([
+                                            ['⛽','ガソリン','ガソリン'],
+                                            ['🛢','ディーゼル','ディーゼル'],
+                                            ['⚡','HV','ハイブリッド'],
+                                            ['🔌','PHV','プラグインハイブリッド'],
+                                            ['🔋','EV','電気'],
+                                            ['🔵','LPG','LPG'],
+                                        ] as [$icon, $label, $value])
+                                        <button type="button"
+                                                @click="fuelTypeVal = '{{ $value }}'; isDirty = true"
+                                                class="flex flex-col items-center justify-center rounded-lg border-2 py-2 px-1 transition-all select-none"
+                                                :class="fuelTypeVal === '{{ $value }}'
+                                                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                                                    : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50'">
+                                            <span class="text-base leading-none mb-0.5">{{ $icon }}</span>
+                                            <span class="text-[10px] font-bold leading-none"
+                                                  :class="fuelTypeVal === '{{ $value }}' ? 'text-indigo-700' : 'text-gray-500'">{{ $label }}</span>
+                                        </button>
                                         @endforeach
-                                        @if($car->fuel_type && !in_array($car->fuel_type, $fuelTypes))
-                                            <option value="{{ $car->fuel_type }}" @selected(true)>{{ $car->fuel_type }}</option>
-                                        @endif
-                                    </select>
+                                    </div>
                                     <x-input-error class="mt-1.5" :messages="$errors->get('fuel_type')" />
                                 </div>
                             </div>
@@ -480,7 +545,11 @@
                                 <div class="grid grid-cols-2 gap-2 text-xs">
                                     <div class="bg-gray-50 rounded-lg px-3 py-2">
                                         <p class="text-gray-400">支払総額</p>
-                                        <p class="font-bold text-gray-700 mt-0.5">{{ number_format($car->price) }}円</p>
+                                        @if($car->price_negotiable)
+                                            <p class="font-bold text-amber-600 mt-0.5">応談</p>
+                                        @else
+                                            <p class="font-bold text-gray-700 mt-0.5">{{ number_format($car->price) }}円</p>
+                                        @endif
                                     </div>
                                     <div class="bg-gray-50 rounded-lg px-3 py-2">
                                         <p class="text-gray-400">年式</p>

@@ -33,7 +33,11 @@
                     </div>
                     <h3>{{ $car->make }} {{ $car->model }}</h3>
                     <p class="grade">{{ $car->grade ?: 'グレード情報なし' }}</p>
+                    @if($car->price_negotiable)
+                    <p class="price-negotiable-stamp">応 談</p>
+                    @else
                     <p class="price">{{ number_format($car->price) }}円</p>
+                    @endif
                     <dl>
                         <div><dt>年式</dt><dd>{{ $car->model_year }}年</dd></div>
                         <div><dt>走行距離</dt><dd>{{ number_format($car->mileage) }}km</dd></div>

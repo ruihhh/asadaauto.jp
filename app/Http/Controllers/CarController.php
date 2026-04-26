@@ -32,11 +32,13 @@ class CarController extends Controller
         }
 
         if ($request->filled('min_price')) {
-            $carsQuery->where('price', '>=', max(0, (int) $request->query('min_price')));
+            $carsQuery->where('price_negotiable', false)
+                ->where('price', '>=', max(0, (int) $request->query('min_price')));
         }
 
         if ($request->filled('max_price')) {
-            $carsQuery->where('price', '<=', max(0, (int) $request->query('max_price')));
+            $carsQuery->where('price_negotiable', false)
+                ->where('price', '<=', max(0, (int) $request->query('max_price')));
         }
 
         if ($request->filled('max_mileage')) {
@@ -45,8 +47,8 @@ class CarController extends Controller
 
         $sort = (string) $request->query('sort', 'latest');
         match ($sort) {
-            'price_asc' => $carsQuery->orderBy('price'),
-            'price_desc' => $carsQuery->orderByDesc('price'),
+            'price_asc' => $carsQuery->orderByRaw('price_negotiable ASC')->orderBy('price'),
+            'price_desc' => $carsQuery->orderByRaw('price_negotiable ASC')->orderByDesc('price'),
             'mileage_asc' => $carsQuery->orderBy('mileage'),
             'year_desc' => $carsQuery->orderByDesc('model_year'),
             default => $carsQuery->latest('published_at')->latest('id'),

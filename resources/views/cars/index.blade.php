@@ -234,6 +234,12 @@
                             <span>{{ $car->body_type }}</span>
                             <span>{{ $car->transmission }}</span>
                         </div>
+                        @if($car->price_negotiable)
+                        <div class="new-fc-negotiable">
+                            <span class="new-fc-oto">応 談</span>
+                            <span class="new-fc-oto-sub">価格はお問い合わせください</span>
+                        </div>
+                        @else
                         <div class="new-fc-price">
                             <span class="new-fc-price-label">総額</span>
                             <span class="new-fc-price-val">{{ number_format($car->price) }}</span>
@@ -241,6 +247,7 @@
                         </div>
                         @if($car->base_price)
                         <p class="new-fc-base-price">本体 {{ number_format($car->base_price) }}円</p>
+                        @endif
                         @endif
                         <span class="new-fc-cta">詳しく見る →</span>
                     </div>
@@ -445,11 +452,18 @@
                             @if($car->status !== 'available')
                                 <span class="car-card-status">{{ match($car->status) { 'reserved' => '商談中', 'sold' => '売約済', default => $car->status } }}</span>
                             @endif
+                            @if($car->price_negotiable)
+                            <div class="cpo-negotiable-block">
+                                <span class="cpo-oto">応 談</span>
+                                <span class="cpo-oto-sub">価格はお問い合わせください</span>
+                            </div>
+                        @else
                             <p class="car-price-overlay">
                                 <span class="cpo-label">総額</span>
                                 <span class="cpo-num">{{ number_format($car->price) }}</span>
                                 <span class="cpo-unit">円</span>
                             </p>
+                        @endif
                         </div>
                     </div>
 

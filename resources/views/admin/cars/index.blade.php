@@ -159,7 +159,11 @@
                                         <p class="text-xs text-gray-500 mt-0.5">{{ number_format($car->mileage) }} km</p>
                                     </td>
                                     <td class="px-5 py-3 text-right">
-                                        <span class="text-sm font-bold text-gray-800">{{ number_format($car->price) }}<span class="text-xs font-normal text-gray-400 ml-0.5">円</span></span>
+                                        @if($car->price_negotiable)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 border border-amber-300">応談</span>
+                                        @else
+                                            <span class="text-sm font-bold text-gray-800">{{ number_format($car->price) }}<span class="text-xs font-normal text-gray-400 ml-0.5">円</span></span>
+                                        @endif
                                     </td>
                                     <td class="px-5 py-3 text-center"
                                         x-data="statusCell('{{ $car->id }}', '{{ $car->status }}', '{{ csrf_token() }}')"

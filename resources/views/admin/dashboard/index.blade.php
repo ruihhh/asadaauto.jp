@@ -80,7 +80,7 @@
                         <div class="py-2 border-b border-gray-100 last:border-0 flex justify-between items-center">
                             <div>
                                 <p class="text-sm font-medium text-gray-800">{{ $car->make }} {{ $car->model }}</p>
-                                <p class="text-xs text-gray-400">{{ $car->stock_no }} — {{ number_format($car->price) }}円</p>
+                                <p class="text-xs text-gray-400">{{ $car->stock_no }} — {{ $car->price_negotiable ? '応談' : number_format($car->price) . '円' }}</p>
                             </div>
                             <span class="text-xs px-2 py-0.5 rounded-full
                                 {{ $car->status === 'available' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">

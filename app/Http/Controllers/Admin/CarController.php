@@ -10,6 +10,7 @@ use App\Models\CarMake;
 use App\Models\CarModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CarController extends Controller
@@ -60,7 +61,8 @@ class CarController extends Controller
             'fuel_type' => 'required|string|max:24',
             'model_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
-            'price' => 'required|integer|min:0|max:9999999999',
+            'price_negotiable' => 'boolean',
+            'price' => ['nullable', 'integer', 'min:0', 'max:9999999999', Rule::requiredIf(! $request->boolean('price_negotiable'))],
             'base_price' => 'nullable|integer|min:0|max:9999999999',
             'color' => 'nullable|string|max:32',
             'location' => 'nullable|string|max:64',
@@ -76,8 +78,13 @@ class CarController extends Controller
         ]);
 
         $validated['featured'] = $request->has('featured');
+        $validated['price_negotiable'] = $request->boolean('price_negotiable');
         $validated['has_service_record'] = $request->has('has_service_record');
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
+        if ($validated['price_negotiable']) {
+            $validated['price'] = null;
+            $validated['base_price'] = null;
+        }
 
         if ($request->hasFile('image')) {
             $validated['image_path'] = $this->storeImage($request->file('image'));
@@ -115,7 +122,8 @@ class CarController extends Controller
             'fuel_type' => 'required|string|max:24',
             'model_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
-            'price' => 'required|integer|min:0|max:9999999999',
+            'price_negotiable' => 'boolean',
+            'price' => ['nullable', 'integer', 'min:0', 'max:9999999999', Rule::requiredIf(! $request->boolean('price_negotiable'))],
             'base_price' => 'nullable|integer|min:0|max:9999999999',
             'color' => 'nullable|string|max:32',
             'location' => 'nullable|string|max:64',
@@ -131,8 +139,13 @@ class CarController extends Controller
         ]);
 
         $validated['featured'] = $request->has('featured');
+        $validated['price_negotiable'] = $request->boolean('price_negotiable');
         $validated['has_service_record'] = $request->has('has_service_record');
         $validated['accident_count'] = (int) ($request->input('accident_count', 0));
+        if ($validated['price_negotiable']) {
+            $validated['price'] = null;
+            $validated['base_price'] = null;
+        }
 
         if ($request->hasFile('image')) {
             $this->deleteImage($car->image_path);
@@ -253,7 +266,7 @@ class CarController extends Controller
 
             fputcsv($stream, [
                 '在庫番号', 'メーカー', 'モデル', 'グレード', 'ボディタイプ',
-                'トランスミッション', '燃料', '年式', '走行距離(km)', '支払総額(円)', '車両本体価格(円)',
+                'トランスミッション', '燃料', '年式', '走行距離(km)', '応談', '支払総額(円)', '車両本体価格(円)',
                 '車体色', '保管場所', 'ステータス', '注目', '公開日時', '登録日時',
                 '事故回数', '整備記録', '車検期限',
             ]);
@@ -269,6 +282,7 @@ class CarController extends Controller
                     $car->fuel_type,
                     $car->model_year,
                     $car->mileage,
+                    $car->price_negotiable ? '応談' : '',
                     $car->price,
                     $car->base_price,
                     $car->color,
