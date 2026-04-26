@@ -99,14 +99,21 @@
 {{-- ユーティリティバー --}}
 <div class="site-utility-bar">
     <div class="container">
-        <a href="{{ route('store') }}">店舗情報・アクセス</a>
-        <a href="{{ route('cars.favorites') }}">❤ お気に入り</a>
-        <a href="{{ route('contact.index') }}">お問い合わせ</a>
-        @auth
-            <a href="{{ route('admin.dashboard') }}">管理画面</a>
-        @else
-            <a href="{{ route('login') }}">管理者ログイン</a>
-        @endauth
+        <div class="util-bar-left">
+            <span class="util-location">兵庫県尼崎市下坂部4丁目5-1</span>
+            <span class="util-sep"></span>
+            <span class="util-hours-badge">11:00〜21:00 営業中</span>
+        </div>
+        <div class="util-bar-right">
+            <a href="{{ route('store') }}">店舗情報・アクセス</a>
+            <a href="{{ route('cars.favorites') }}">お気に入り</a>
+            <a href="{{ route('contact.index') }}">お問い合わせ</a>
+            @auth
+                <a href="{{ route('admin.dashboard') }}">管理画面</a>
+            @else
+                <a href="{{ route('login') }}">管理者ログイン</a>
+            @endauth
+        </div>
     </div>
 </div>
 
@@ -119,9 +126,17 @@
                 <a href="{{ route('home') }}" class="site-logo-name">{{ config('app.name', 'Asada Auto') }}</a>
                 <p class="site-logo-sub">状態の良い中古車を、価格と整備履歴の透明性で選べる在庫サイト</p>
             </div>
-            <div class="site-header-contact">
-                <div class="site-header-tel"><a href="tel:06-4960-8765" style="color:inherit;text-decoration:none;">06-4960-8765</a></div>
-                <div class="site-header-hours">受付時間：11:00〜21:00（木曜・第3日曜定休）</div>
+            <div class="site-header-right">
+                <div class="site-header-contact">
+                    <div class="site-header-tel-label">お電話でのご相談</div>
+                    <div class="site-header-tel">
+                        <a href="tel:06-4960-8765">06-4960-8765</a>
+                    </div>
+                    <div class="site-header-hours">受付時間：11:00〜21:00（木曜・第3日曜定休）</div>
+                </div>
+                <a href="{{ route('contact.index') }}" class="header-cta-btn">
+                    <small>無料</small>お見積もり
+                </a>
             </div>
         </div>
     </div>
@@ -132,22 +147,30 @@
     <div class="container">
         <div class="trust-bar-inner">
             <div class="trust-item">
-                <span class="trust-item-icon trust-red">✅</span>
+                <span class="trust-item-icon trust-red">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
                 <span>第三者機関による車両検査済み</span>
             </div>
             <div class="trust-divider"></div>
             <div class="trust-item">
-                <span class="trust-item-icon">🔒</span>
+                <span class="trust-item-icon trust-green">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
                 <span>安心の保証付き</span>
             </div>
             <div class="trust-divider"></div>
             <div class="trust-item">
-                <span class="trust-item-icon trust-blue">📋</span>
+                <span class="trust-item-icon trust-blue">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </span>
                 <span>整備履歴・修復歴の明示</span>
             </div>
             <div class="trust-divider"></div>
             <div class="trust-item">
-                <span class="trust-item-icon trust-red">💰</span>
+                <span class="trust-item-icon trust-orange">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </span>
                 <span>明瞭な総額価格表示</span>
             </div>
         </div>
@@ -159,26 +182,27 @@
     <div class="container">
         <div class="site-nav-inner" :class="open ? 'open' : ''">
             <a href="{{ route('cars.index') }}" class="{{ request()->routeIs('cars.*') && !request()->routeIs('cars.compare') && request('sort') !== 'latest' ? 'active' : '' }}">
-                🚗 在庫一覧
+                在庫一覧
             </a>
             <a href="{{ route('cars.index', ['sort' => 'latest']) }}" class="{{ request()->routeIs('cars.index') && request('sort') === 'latest' ? 'active' : '' }}">
-                ✨ 新着車両
+                新着車両
             </a>
             <a href="{{ route('cars.compare') }}" class="{{ request()->routeIs('cars.compare') ? 'active' : '' }}">
-                ⚖ 車両比較
+                車両比較
             </a>
             <a href="{{ route('store') }}" class="{{ request()->routeIs('store') ? 'active' : '' }}">
-                📍 店舗情報
+                店舗情報
             </a>
-            <a href="{{ route('buy.index') }}" class="{{ request()->routeIs('buy.*') ? 'active' : '' }}"
-               style="{{ request()->routeIs('buy.*') ? '' : 'background:rgba(255,255,255,.12);' }}">
-                💰 買取査定
+            <a href="{{ route('buy.index') }}" class="nav-link-accent {{ request()->routeIs('buy.*') ? 'active' : '' }}">
+                買取査定
             </a>
-            <a href="{{ route('contact.index') }}" class="{{ request()->routeIs('contact.*') ? 'active' : '' }}">
-                ✉ お問い合わせ
+            <a href="{{ route('contact.index') }}" class="nav-link-contact {{ request()->routeIs('contact.*') ? 'active' : '' }}">
+                お問い合わせ
             </a>
-            <button class="nav-mobile-toggle" @click="open = !open" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 16px;margin-left:auto;min-height:46px;">
-                ☰
+            <button class="nav-mobile-toggle" @click="open = !open" :aria-expanded="open.toString()" aria-label="メニュー">
+                <span class="nav-toggle-icon" :class="{ 'is-open': open }">
+                    <span></span><span></span><span></span>
+                </span>
             </button>
         </div>
     </div>
