@@ -44,8 +44,7 @@ class UserFactory extends Factory
 
     public function admin(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'is_admin' => true,
-        ]);
+        // is_admin は $fillable 外のため forceFill で設定する（保存前に確定）。
+        return $this->afterMaking(fn (\App\Models\User $user) => $user->forceFill(['is_admin' => true]));
     }
 }

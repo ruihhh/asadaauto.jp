@@ -67,7 +67,9 @@ class Car extends Model
     {
         parent::boot();
 
-        static::creating(function (self $car): void {
+        // slug は空のときだけ生成する。既存 slug は更新時も変更せず URL を安定させる
+        // （SEO・共有リンク維持のため）。creating だけでなく saving でも自己修復する。
+        static::saving(function (self $car): void {
             if (empty($car->slug)) {
                 $car->slug = static::generateSlug($car);
             }
@@ -90,10 +92,22 @@ class Car extends Model
             $makeRomaji,
             $modelPart ?: null,
             (string) $car->model_year,
-            strtolower($car->stock_no),
+            Str::slug($car->stock_no),
         ]);
 
-        return implode('-', $parts);
+        $base = implode('-', $parts);
+
+        // stock_no が一意なため通常は衝突しないが、念のため一意性を保証する。
+        $slug = $base;
+        $suffix = 2;
+        while (static::query()
+            ->where('slug', $slug)
+            ->when($car->getKey(), fn ($query, $id) => $query->whereKeyNot($id))
+            ->exists()) {
+            $slug = $base . '-' . $suffix++;
+        }
+
+        return $slug;
     }
 
     private static function makeToRomaji(string $make): string

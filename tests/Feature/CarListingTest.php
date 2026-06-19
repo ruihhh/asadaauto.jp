@@ -41,6 +41,32 @@ class CarListingTest extends TestCase
         $response->assertDontSee('ホンダ ヴェゼル');
     }
 
+    public function test_public_detail_page_is_accessible_for_available_car(): void
+    {
+        $car = Car::factory()->create([
+            'status' => 'available',
+            'published_at' => now()->subDay(),
+        ]);
+
+        $this->get(route('cars.show', $car))->assertOk();
+    }
+
+    public function test_public_detail_page_hides_non_public_cars(): void
+    {
+        $sold = Car::factory()->create([
+            'status' => 'sold',
+            'published_at' => now()->subDay(),
+        ]);
+
+        $unpublished = Car::factory()->create([
+            'status' => 'available',
+            'published_at' => now()->addDay(),
+        ]);
+
+        $this->get(route('cars.show', $sold))->assertNotFound();
+        $this->get(route('cars.show', $unpublished))->assertNotFound();
+    }
+
     public function test_inventory_can_be_filtered_by_make_and_price(): void
     {
         Car::factory()->create([
