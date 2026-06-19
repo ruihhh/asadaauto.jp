@@ -113,8 +113,15 @@
 
 @section('content')
 
+@php
+    // 公式LINE・電話番号（連絡先導線で共通利用）
+    // ※公式LINEのURLは取得後に差し替えてください
+    $lineUrl  = 'https://lin.ee/asadaauto';
+    $shopTel  = '06-4960-8765';
+@endphp
+
 {{-- ============================================================
-     ① ヒーロー（カーセンサー風 明るい左右分割レイアウト）
+     ① ヒーロー（地域店らしい安心感と探しやすさを両立）
      ============================================================ --}}
 <section class="home-hero-v2">
     <div class="container">
@@ -123,33 +130,42 @@
             {{-- 左: ブランド + 在庫数 + クイックリンク --}}
             <div class="home-hero-v2-left">
                 <p class="home-hero-v2-eyebrow">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    兵庫県尼崎市の中古車販売店
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    尼崎・西宮・伊丹からアクセス便利
                 </p>
-                <h1 class="home-hero-v2-title">尼崎の中古車を<br><span>透明な価格</span>で</h1>
-                <p class="home-hero-v2-desc">兵庫県尼崎市から、整備履歴・修復歴を正直に開示。<br>諸費用込みの総額で安心してお選びいただけます。</p>
+                <h1 class="home-hero-v2-title"><span>納得して選べる、</span><br>尼崎の中古車。</h1>
+                <p class="home-hero-v2-desc">支払総額、修復歴、整備履歴をわかりやすくご案内。<br>購入前の不安も、購入後のことも気軽にご相談ください。</p>
 
-                <div class="home-hero-v2-count">
-                    <div class="home-hero-v2-count-inner">
-                        <span class="home-hero-v2-count-num">{{ number_format($totalPublic) }}</span>
-                        <span class="home-hero-v2-count-unit">台</span>
+                <div class="home-hero-summary">
+                    <div class="home-hero-v2-count">
+                        <div class="home-hero-v2-count-inner">
+                            <span class="home-hero-v2-count-num">{{ number_format($totalPublic) }}</span>
+                            <span class="home-hero-v2-count-unit">台</span>
+                        </div>
+                        <p class="home-hero-v2-count-label">ただいま掲載中</p>
                     </div>
-                    <p class="home-hero-v2-count-label">現在の在庫台数</p>
+                    <ul class="home-hero-assurance">
+                        <li><span>価格</span>諸費用込みの総額表示</li>
+                        <li><span>品質</span>車両状態を丁寧にご説明</li>
+                        <li><span>相談</span>試乗・ローン相談も無料</li>
+                    </ul>
                 </div>
 
+                <p class="home-hero-tags-label">人気の条件からすぐ探す</p>
                 <div class="home-hero-v2-tags">
                     <a href="{{ route('cars.index', ['body_type' => '軽自動車']) }}" class="hero-tag">軽自動車</a>
                     <a href="{{ route('cars.index', ['body_type' => 'コンパクトカー']) }}" class="hero-tag">コンパクト</a>
                     <a href="{{ route('cars.index', ['body_type' => 'ミニバン']) }}" class="hero-tag">ミニバン</a>
                     <a href="{{ route('cars.index', ['body_type' => 'SUV']) }}" class="hero-tag">SUV</a>
                     <a href="{{ route('cars.index', ['body_type' => 'セダン']) }}" class="hero-tag">セダン</a>
-                    <a href="{{ route('cars.index', ['sort' => 'latest']) }}" class="hero-tag hero-tag-new">✨ 新着車両</a>
+                    <a href="{{ route('cars.index', ['sort' => 'latest']) }}" class="hero-tag hero-tag-new">新着車両</a>
                 </div>
 
                 <div class="home-hero-v2-actions">
-                    <a href="{{ route('cars.index') }}" class="btn-primary">在庫一覧を見る &rsaquo;</a>
-                    <a href="{{ route('buy.index') }}" class="btn-secondary">無料買取査定</a>
+                    <a href="{{ route('cars.index') }}" class="btn-primary">掲載中の車を見る &rsaquo;</a>
+                    <a href="{{ route('contact.index') }}" class="btn-secondary">車選びを相談する</a>
                 </div>
+                <p class="home-hero-shop-note">営業時間 11:00〜21:00 <span>木曜・第3日曜定休</span></p>
             </div>
 
             {{-- 中央: 車の画像（デコレーション） --}}
@@ -165,8 +181,8 @@
                 <div class="home-hero-search-card">
                     <div class="home-hero-search-card-head">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                        クルマを探す
-                        <span class="search-card-count">{{ number_format($totalPublic) }}台から</span>
+                        条件から在庫を探す
+                        <span class="search-card-count">掲載 {{ number_format($totalPublic) }}台</span>
                     </div>
                     <div class="home-hero-search-card-body">
                         <form method="get" action="{{ route('cars.index') }}">
@@ -224,6 +240,7 @@
                             <a href="{{ route('cars.index', ['max_mileage' => 30000]) }}">3万km以下</a>
                             <a href="{{ route('cars.index', ['sort' => 'latest']) }}">新着順</a>
                         </div>
+                        <a href="{{ route('contact.index') }}" class="hero-search-consult">条件が決まっていない方は、スタッフに相談 &rsaquo;</a>
                     </div>
                 </div>
             </div>
@@ -233,37 +250,105 @@
 </section>
 
 {{-- ============================================================
-     ② 実績統計バー
+     ①-2 季節キャンペーンバナー（夏のボーナス大商談会）
+     ============================================================ --}}
+<section class="home-campaign">
+    <div class="campaign-banner">
+        <div class="campaign-ribbon"><span>開催中</span></div>
+        <div class="container campaign-banner-inner">
+            <div class="campaign-main">
+                <div class="campaign-lead">
+                    <p class="campaign-season">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a1 1 0 0 1 1 1v1.06a8 8 0 0 1 6.94 6.94H21a1 1 0 1 1 0 2h-1.06A8 8 0 0 1 13 19.94V21a1 1 0 1 1-2 0v-1.06A8 8 0 0 1 4.06 13H3a1 1 0 1 1 0-2h1.06A8 8 0 0 1 11 4.06V3a1 1 0 0 1 1-1zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>
+                        SUMMER BONUS FAIR
+                    </p>
+                    <h2 class="campaign-title">夏のボーナス<span>大商談会</span></h2>
+                    <p class="campaign-period">2026年8月31日(月)まで</p>
+                </div>
+                <ul class="campaign-perks">
+                    <li><span class="perk-ico">🎁</span><span class="perk-txt">車検まるごと<br>サポート</span></li>
+                    <li><span class="perk-ico">🛡️</span><span class="perk-txt">最長3年保証<br>無料付帯</span></li>
+                    <li><span class="perk-ico">💰</span><span class="perk-txt">特別低金利<br>3.9%〜</span></li>
+                    <li><span class="perk-ico">🚗</span><span class="perk-txt">頭金0円<br>最大120回OK</span></li>
+                </ul>
+                <div class="campaign-actions">
+                    <a href="{{ route('cars.index') }}" class="campaign-btn-main">対象車を見る &rsaquo;</a>
+                    <a href="{{ $lineUrl }}" class="campaign-btn-line" target="_blank" rel="noopener">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.58 7.39 8.42 8.03.33.07.77.22.88.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.9.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.4 22 11.85 22 10.13 22 5.64 17.52 2 12 2z"/></svg>
+                        LINEで相談
+                    </a>
+                </div>
+            </div>
+            <p class="campaign-note">※ 内容は予告なく変更・終了する場合がございます。詳しくはスタッフまでお問い合わせください。</p>
+        </div>
+    </div>
+</section>
+
+{{-- ============================================================
+     ② 安心して選べるポイント
      ============================================================ --}}
 <div class="home-stats-bar">
     <div class="container">
         <div class="home-stats-inner">
             <div class="home-stat-item">
-                <span class="home-stat-number">{{ number_format($totalPublic) }}</span>
-                <span class="home-stat-unit">台</span>
-                <p class="home-stat-label">現在の在庫台数</p>
+                <span class="home-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M5 12l2-5h10l2 5M5 12v6h2v-2h10v2h2v-6"/><circle cx="7.5" cy="13.5" r="1"/><circle cx="16.5" cy="13.5" r="1"/></svg></span>
+                <div><p class="home-stat-kicker">掲載在庫</p><p class="home-stat-label"><strong>{{ number_format($totalPublic) }}台</strong>から選べます</p></div>
             </div>
             <div class="home-stat-div"></div>
             <div class="home-stat-item">
-                <span class="home-stat-number">10</span>
-                <span class="home-stat-unit">年+</span>
-                <p class="home-stat-label">地域での実績</p>
+                <span class="home-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5M8 17h8"/></svg></span>
+                <div><p class="home-stat-kicker">価格表示</p><p class="home-stat-label"><strong>支払総額</strong>でわかりやすく</p></div>
             </div>
             <div class="home-stat-div"></div>
             <div class="home-stat-item">
-                <span class="home-stat-number">0</span>
-                <span class="home-stat-unit">円</span>
-                <p class="home-stat-label">仲介手数料</p>
+                <span class="home-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-5"/></svg></span>
+                <div><p class="home-stat-kicker">車両情報</p><p class="home-stat-label"><strong>修復歴・整備履歴</strong>を開示</p></div>
             </div>
             <div class="home-stat-div"></div>
             <div class="home-stat-item">
-                <span class="home-stat-number">98</span>
-                <span class="home-stat-unit">%</span>
-                <p class="home-stat-label">顧客満足度</p>
+                <span class="home-stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72"/></svg></span>
+                <div><p class="home-stat-kicker">ご相談</p><p class="home-stat-label"><strong>電話・Web</strong>で気軽に相談</p></div>
             </div>
         </div>
     </div>
 </div>
+
+{{-- ============================================================
+     ②-2 暮らし・用途から探す
+     ============================================================ --}}
+<section class="home-purpose-nav">
+    <div class="container">
+        <div class="home-purpose-head">
+            <div>
+                <p class="home-purpose-eyebrow">どんな使い方をしますか？</p>
+                <h2>暮らしに合うクルマから探す</h2>
+            </div>
+            <a href="{{ route('cars.index') }}">すべての在庫を見る &rsaquo;</a>
+        </div>
+        <div class="home-purpose-grid">
+            <a href="{{ route('cars.index', ['body_type' => '軽自動車']) }}" class="home-purpose-card purpose-red">
+                <span class="home-purpose-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M5 12l2-5h10l2 5M5 12v6h2v-2h10v2h2v-6"/><circle cx="7.5" cy="13.5" r="1"/><circle cx="16.5" cy="13.5" r="1"/></svg></span>
+                <span><strong>通勤・お買い物に</strong><small>小回りの利く軽自動車</small></span>
+                <b>&rsaquo;</b>
+            </a>
+            <a href="{{ route('cars.index', ['body_type' => 'ミニバン']) }}" class="home-purpose-card purpose-orange">
+                <span class="home-purpose-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h15l2 5v6H3v-7l1-4z"/><path d="M8 7V4h7v3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></span>
+                <span><strong>子育て・家族に</strong><small>広々使えるミニバン</small></span>
+                <b>&rsaquo;</b>
+            </a>
+            <a href="{{ route('cars.index', ['body_type' => 'SUV']) }}" class="home-purpose-card purpose-green">
+                <span class="home-purpose-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 13h18l-2-5H7l-4 5zM4 13v5h2M20 13v5h-2"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/></svg></span>
+                <span><strong>休日・レジャーに</strong><small>頼れるSUV・四駆</small></span>
+                <b>&rsaquo;</b>
+            </a>
+            <a href="{{ route('cars.index', ['max_price' => 1000000]) }}" class="home-purpose-card purpose-blue">
+                <span class="home-purpose-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 8h8M8 12h8M12 8v9"/></svg></span>
+                <span><strong>予算を抑えたい</strong><small>100万円以下から探す</small></span>
+                <b>&rsaquo;</b>
+            </a>
+        </div>
+    </div>
+</section>
 
 {{-- ============================================================
      ③ ボディタイプ別クイックアクセス
@@ -312,6 +397,11 @@
                 <div class="body-type-icon-wrap">{!! $svgIcon('sports') !!}</div>
                 <div class="body-type-name">スポーツ</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'スポーツ') || str_contains($k,'クーペ'))->sum() }}台</div>
+            </a>
+            <a href="{{ route('cars.index', ['body_type' => '福祉車両']) }}" class="body-type-card body-type-welfare">
+                <div class="body-type-icon-wrap">{!! $svgIcon('welfare') !!}</div>
+                <div class="body-type-name">福祉車両</div>
+                <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'福祉'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index') }}" class="body-type-card body-type-card-all">
                 <div class="body-type-icon-wrap">{!! $svgIcon('all') !!}</div>
@@ -561,6 +651,89 @@
 </section>
 
 {{-- ============================================================
+     ⑧-2 支払いシミュレーション ＋ 総額表示宣言
+     ============================================================ --}}
+<section class="section section-white pay-sim-section">
+    <div class="container">
+        <div class="section-head-row">
+            <h2 class="section-heading">かんたん支払いシミュレーション</h2>
+            <p class="section-sub-text">月々のお支払い目安をその場でチェック。無理のないプランをご提案します。</p>
+        </div>
+
+        <div class="pay-sim-grid"
+             x-data="{
+                price: 1500000,
+                down: 0,
+                months: 60,
+                rate: 0.039,
+                get principal(){ return Math.max(0, this.price - this.down); },
+                get monthly(){
+                    const r = this.rate / 12, n = this.months, p = this.principal;
+                    if (p <= 0) return 0;
+                    return Math.round(p * r / (1 - Math.pow(1 + r, -n)));
+                },
+                get total(){ return this.monthly * this.months; },
+                yen(v){ return Math.round(v).toLocaleString('ja-JP'); }
+             }">
+
+            {{-- 入力 --}}
+            <div class="pay-sim-form">
+                <div class="pay-sim-field">
+                    <label>車両本体価格（総額）<span class="pay-sim-val" x-text="'¥' + yen(price)"></span></label>
+                    <input type="range" min="300000" max="5000000" step="50000" x-model.number="price">
+                    <div class="pay-sim-range-cap"><span>30万</span><span>500万</span></div>
+                </div>
+                <div class="pay-sim-field">
+                    <label>頭金<span class="pay-sim-val" x-text="'¥' + yen(down)"></span></label>
+                    <input type="range" min="0" :max="price" step="50000" x-model.number="down">
+                    <div class="pay-sim-range-cap"><span>0円</span><span>頭金0円もOK</span></div>
+                </div>
+                <div class="pay-sim-field">
+                    <label>支払い回数</label>
+                    <div class="pay-sim-months">
+                        <template x-for="m in [24,36,48,60,84,120]" :key="m">
+                            <button type="button"
+                                    @click="months = m"
+                                    :class="months === m ? 'is-active' : ''"
+                                    x-text="m + '回'"></button>
+                        </template>
+                    </div>
+                </div>
+                <p class="pay-sim-rate">実質年率 <strong x-text="(rate*100).toFixed(1) + '%'"></strong>（ボーナス払いなし）で計算</p>
+            </div>
+
+            {{-- 結果 --}}
+            <div class="pay-sim-result">
+                <p class="pay-sim-result-label">月々のお支払い目安</p>
+                <p class="pay-sim-result-monthly">
+                    <span class="pay-sim-yen">¥</span>
+                    <span class="pay-sim-num" x-text="yen(monthly)">25,000</span>
+                    <span class="pay-sim-unit">／月</span>
+                </p>
+                <div class="pay-sim-breakdown">
+                    <div><span>支払い回数</span><strong x-text="months + '回'"></strong></div>
+                    <div><span>お支払い総額</span><strong x-text="'¥' + yen(total + down)"></strong></div>
+                </div>
+                <a href="{{ route('contact.index') }}" class="btn-primary pay-sim-cta">この条件で相談する &rsaquo;</a>
+                <a href="{{ $lineUrl }}" class="pay-sim-line" target="_blank" rel="noopener">LINEで気軽に相談する</a>
+                <p class="pay-sim-disclaimer">※ あくまで目安です。金利・回数は審査結果により異なります。</p>
+            </div>
+        </div>
+
+        {{-- 総額表示宣言 --}}
+        <div class="total-price-pledge">
+            <div class="pledge-badge">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 9"/></svg>
+            </div>
+            <div class="pledge-text">
+                <h3>表示価格は「お支払い総額」。追加費用はいただきません。</h3>
+                <p>当店の表示価格は<strong>諸費用・整備費用・登録費用込みの総額</strong>です。「現地登録・店頭納車」の場合、表示価格以外の追加費用は一切かかりません。安心してご検討ください。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- ============================================================
      ⑨ 人気車種ランキング（タブ切替）
      ============================================================ --}}
 <section class="section section-white">
@@ -779,6 +952,53 @@
 </section>
 
 {{-- ============================================================
+     ⑪-2 スタッフ紹介（地域密着の安心感）
+     ============================================================ --}}
+<section class="section section-gray home-staff">
+    <div class="container">
+        <div class="section-head-row">
+            <h2 class="section-heading">スタッフ紹介</h2>
+            <p class="section-sub-text">私たちがあなたのクルマ選びを、最後までしっかりお手伝いします。</p>
+        </div>
+
+        <div class="staff-greeting">
+            <div class="staff-greeting-avatar">朝</div>
+            <div class="staff-greeting-body">
+                <p class="staff-greeting-role">代表 / 店長</p>
+                <p class="staff-greeting-name">朝田 繕行 <span>Asada Zenko</span></p>
+                <p class="staff-greeting-msg">「お客様に長く安心して乗っていただける一台を」——これが当店の信条です。尼崎の地で営業して10年以上、地域のみなさまに支えられてきました。クルマのことはもちろん、ローンや保証のご相談まで、何でもお気軽にお声がけください。一台一台、誠実にご紹介いたします。</p>
+            </div>
+        </div>
+
+        {{-- スタッフ紹介2段目は掲載情報が確定するまで非表示
+        <div class="staff-grid">
+            <div class="staff-card">
+                <div class="staff-avatar staff-avatar-red">朝</div>
+                <p class="staff-name">朝田 繕行</p>
+                <p class="staff-role">代表 / 店長</p>
+                <p class="staff-word">予算と用途をじっくり伺って、ぴったりの一台をご提案します。</p>
+                <div class="staff-tags"><span>車選び全般</span><span>ローン相談</span></div>
+            </div>
+            <div class="staff-card">
+                <div class="staff-avatar staff-avatar-blue">田</div>
+                <p class="staff-name">田中</p>
+                <p class="staff-role">営業担当</p>
+                <p class="staff-word">はじめての方も大歓迎。難しい専門用語は使わずご説明します。</p>
+                <div class="staff-tags"><span>初めての方</span><span>試乗案内</span></div>
+            </div>
+            <div class="staff-card">
+                <div class="staff-avatar staff-avatar-green">山</div>
+                <p class="staff-name">山本</p>
+                <p class="staff-role">整備士（国家資格）</p>
+                <p class="staff-word">納車前の点検整備からアフターまで、責任を持って対応します。</p>
+                <div class="staff-tags"><span>点検・整備</span><span>アフター</span></div>
+            </div>
+        </div>
+        --}}
+    </div>
+</section>
+
+{{-- ============================================================
      ⑫ オーナーズボイス
      ============================================================ --}}
 <section class="section section-gray">
@@ -901,6 +1121,45 @@
 </section>
 
 {{-- ============================================================
+     ⑬-2 ご相談・お問い合わせ方法（電話 / LINE / 来店予約）
+     ============================================================ --}}
+<section class="section section-gray contact-channels">
+    <div class="container">
+        <div class="cc-head">
+            <p class="cc-eyebrow">CONTACT</p>
+            <h2 class="cc-title">お気軽にご相談ください</h2>
+            <p class="cc-sub">在庫確認・お見積り・試乗予約・買取査定まで、ご相談はすべて無料。ご都合の良い方法でどうぞ。</p>
+        </div>
+        <div class="cc-grid">
+            <a href="tel:{{ $shopTel }}" class="cc-card cc-card-tel">
+                <span class="cc-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.25-.45 12.8 12.8 0 0 0 2.6.56 2 2 0 0 1 1.7 2.02z"/></svg>
+                </span>
+                <span class="cc-card-label">お電話で相談</span>
+                <span class="cc-card-main">{{ $shopTel }}</span>
+                <span class="cc-card-sub">11:00〜21:00（木曜・第3日曜定休）</span>
+            </a>
+            <a href="{{ $lineUrl }}" target="_blank" rel="noopener" class="cc-card cc-card-line">
+                <span class="cc-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.58 7.39 8.42 8.03.33.07.77.22.88.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.9.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.4 22 11.85 22 10.13 22 5.64 17.52 2 12 2z"/></svg>
+                </span>
+                <span class="cc-card-label">LINEで相談</span>
+                <span class="cc-card-main">友だち追加して相談</span>
+                <span class="cc-card-sub">写真を送って在庫確認・査定もOK</span>
+            </a>
+            <a href="{{ route('contact.index') }}" class="cc-card cc-card-visit">
+                <span class="cc-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </span>
+                <span class="cc-card-label">来店予約・お問い合わせ</span>
+                <span class="cc-card-main">フォームで予約する</span>
+                <span class="cc-card-sub">24時間受付・ご希望日時をご記入ください</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+{{-- ============================================================
      ⑭ SEO テキスト＋対応エリア
      ============================================================ --}}
 <section class="section section-white seo-local-section">
@@ -979,6 +1238,24 @@
             </div>
         </div>
     </div>
+</div>
+
+{{-- ============================================================
+     スマホ固定アクションバー（電話 / LINE / 在庫検索）
+     ============================================================ --}}
+<div class="home-mobile-bar">
+    <a href="tel:{{ $shopTel }}" class="hmb-item hmb-tel">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.25-.45 12.8 12.8 0 0 0 2.6.56 2 2 0 0 1 1.7 2.02z"/></svg>
+        <span>電話</span>
+    </a>
+    <a href="{{ $lineUrl }}" target="_blank" rel="noopener" class="hmb-item hmb-line">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.58 7.39 8.42 8.03.33.07.77.22.88.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.9.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.4 22 11.85 22 10.13 22 5.64 17.52 2 12 2z"/></svg>
+        <span>LINE相談</span>
+    </a>
+    <a href="{{ route('cars.index') }}" class="hmb-item hmb-search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <span>在庫を探す</span>
+    </a>
 </div>
 
 @endsection
