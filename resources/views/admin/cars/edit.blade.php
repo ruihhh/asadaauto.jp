@@ -22,6 +22,8 @@
         </div>
     </x-slot>
 
+    <style>[x-cloak]{display:none!important}</style>
+
     {{-- ページ固有データを window 変数へ（HTML属性内の@jsonを避けるため） --}}
     <script>
         window.__carEdit = {
@@ -178,7 +180,7 @@
                                     <x-input-label value="ボディタイプ *" />
                                     <input type="hidden" name="body_type" :value="bodyTypeVal">
                                     <div class="mt-1 grid grid-cols-5 gap-2">
-                                        @foreach([['セダン','セダン'],['SUV','SUV'],['ミニバン','ミニバン'],['HB','ハッチバック'],['クーペ','クーペ'],['コンパクト','コンパクト'],['軽自動車','軽自動車'],['ワゴン','ステーションワゴン'],['トラック','トラック'],['その他','その他']] as [$label, $value])
+                                        @foreach([['セダン','セダン'],['SUV','SUV'],['ミニバン','ミニバン'],['HB','ハッチバック'],['クーペ','クーペ'],['コンパクト','コンパクト'],['軽自動車','軽自動車'],['ワゴン','ステーションワゴン'],['トラック','トラック'],['福祉車両','福祉車両'],['その他','その他']] as [$label, $value])
                                         <button type="button"
                                                 @click="bodyTypeVal = '{{ $value }}'; isDirty = true"
                                                 class="flex items-center justify-center rounded-lg border-2 py-2.5 px-1 text-xs font-semibold text-center min-h-[44px] transition-all select-none"
@@ -346,13 +348,31 @@
                                         <x-input-error class="mt-1.5" :messages="$errors->get('accident_count')" />
                                     </div>
 
-                                    <div>
-                                        <x-input-label for="inspection_expiry" value="車検有効期限" />
-                                        <x-text-input id="inspection_expiry" name="inspection_expiry" type="date"
-                                                      class="mt-1 block w-full text-sm"
-                                                      value="{{ old('inspection_expiry', $car->inspection_expiry?->format('Y-m-d')) }}"
-                                                      @change="isDirty = true" />
-                                        <x-input-error class="mt-1.5" :messages="$errors->get('inspection_expiry')" />
+                                    <div class="sm:col-span-2" x-data="{ inspectionTypeVal: '{{ old('inspection_type', $car->inspection_type) }}' }">
+                                        <x-input-label value="車検" />
+                                        <input type="hidden" name="inspection_type" :value="inspectionTypeVal">
+                                        <div class="mt-1 grid grid-cols-5 gap-1.5">
+                                            @foreach(\App\Models\Car::INSPECTION_TYPES as $type)
+                                            <button type="button"
+                                                    @click="inspectionTypeVal = (inspectionTypeVal === '{{ $type }}' ? '' : '{{ $type }}'); isDirty = true"
+                                                    class="flex items-center justify-center rounded-lg border-2 py-2.5 px-1 text-xs font-semibold text-center min-h-[44px] transition-all select-none"
+                                                    :class="inspectionTypeVal === '{{ $type }}'
+                                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                        : 'border-gray-200 bg-white text-gray-500 hover:border-indigo-300 hover:bg-indigo-50'">
+                                                {{ $type }}
+                                            </button>
+                                            @endforeach
+                                        </div>
+                                        <x-input-error class="mt-1.5" :messages="$errors->get('inspection_type')" />
+
+                                        <div x-show="inspectionTypeVal === 'あり'" x-cloak class="mt-3">
+                                            <x-input-label for="inspection_expiry" value="車検有効期限（年月）" />
+                                            <x-text-input id="inspection_expiry" name="inspection_expiry" type="month"
+                                                          class="mt-1 block w-full text-sm"
+                                                          value="{{ old('inspection_expiry', $car->inspection_expiry?->format('Y-m')) }}"
+                                                          @change="isDirty = true" />
+                                            <x-input-error class="mt-1.5" :messages="$errors->get('inspection_expiry')" />
+                                        </div>
                                     </div>
 
                                     <div>

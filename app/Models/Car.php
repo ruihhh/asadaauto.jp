@@ -36,8 +36,14 @@ class Car extends Model
         'accident_count',
         'has_service_record',
         'inspection_expiry',
+        'inspection_type',
         'equipment',
     ];
+
+    /**
+     * 車検区分の選択肢（管理画面のセレクト・絞り込みで使用）。
+     */
+    public const INSPECTION_TYPES = ['3年付', '2年付', '1年付', 'あり', 'なし'];
 
     public const EQUIPMENT_CATEGORIES = [
         '安全装備' => [
@@ -147,6 +153,29 @@ class Car extends Model
     public function images(): HasMany
     {
         return $this->hasMany(CarImage::class)->orderBy('sort_order');
+    }
+
+    /**
+     * カード等で表示する車検ラベル。区分を優先し、未設定なら実日付にフォールバックする。
+     */
+    public function inspectionLabel(): ?string
+    {
+        if (! empty($this->inspection_type)) {
+            // 「あり」は実日付があればその満了月を、なければ「車検あり」を表示する
+            if ($this->inspection_type === 'あり') {
+                return $this->inspection_expiry !== null
+                    ? '車検 ' . $this->inspection_expiry->format('Y年m月')
+                    : '車検あり';
+            }
+
+            return $this->inspection_type === 'なし' ? '車検なし' : '車検' . $this->inspection_type;
+        }
+
+        if ($this->inspection_expiry !== null) {
+            return '車検 ' . $this->inspection_expiry->format('Y年m月');
+        }
+
+        return null;
     }
 
     public function scopePublicInventory(Builder $query): Builder

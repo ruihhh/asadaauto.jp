@@ -52,6 +52,7 @@
                     '車体色' => fn($c) => $c->color ?: '—',
                     '事故歴' => fn($c) => $c->accident_count > 0 ? $c->accident_count . '回' : 'なし',
                     '整備記録' => fn($c) => $c->has_service_record ? 'あり' : 'なし',
+                    '車検' => fn($c) => $c->inspection_type ?: '—',
                     '車検期限' => fn($c) => $c->inspection_expiry?->format('Y年m月') ?: '—',
                     '保管場所' => fn($c) => $c->location ?: '—',
                     '在庫番号' => fn($c) => $c->stock_no,

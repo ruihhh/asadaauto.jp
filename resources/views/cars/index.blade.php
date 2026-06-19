@@ -398,6 +398,15 @@
                 <input type="number" min="0" name="max_mileage" value="{{ $filters['max_mileage'] }}" placeholder="例: 50000">
             </label>
             <label>
+                車検
+                <select name="inspection">
+                    <option value="">すべて</option>
+                    @foreach (\App\Models\Car::INSPECTION_TYPES as $type)
+                        <option value="{{ $type }}" @selected($filters['inspection'] === $type)>車検{{ $type }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label>
                 並び順
                 <select name="sort">
                     <option value="latest"      @selected($filters['sort'] === 'latest')>新着順</option>
@@ -478,6 +487,9 @@
                             <span>{{ number_format($car->mileage) }} km</span>
                             <span>{{ $car->body_type }}</span>
                             <span>{{ $car->transmission }}</span>
+                            @if($car->inspectionLabel())
+                                <span>{{ $car->inspectionLabel() }}</span>
+                            @endif
                         </div>
                         @if($car->base_price)
                         <p class="car-card-base-price">本体 {{ number_format($car->base_price) }}円</p>

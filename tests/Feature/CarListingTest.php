@@ -100,4 +100,43 @@ class CarListingTest extends TestCase
         $response->assertDontSee('トヨタ ハリアー');
         $response->assertDontSee('日産 ノート');
     }
+
+    public function test_inventory_can_be_filtered_by_inspection_type(): void
+    {
+        Car::factory()->create([
+            'make' => 'トヨタ',
+            'model' => 'アクア',
+            'inspection_type' => '3年付',
+            'status' => 'available',
+            'published_at' => now()->subHour(),
+        ]);
+
+        Car::factory()->create([
+            'make' => 'トヨタ',
+            'model' => 'パッソ',
+            'inspection_type' => '2年付',
+            'status' => 'available',
+            'published_at' => now()->subHour(),
+        ]);
+
+        Car::factory()->create([
+            'make' => 'トヨタ',
+            'model' => 'ルーミー',
+            'inspection_type' => 'なし',
+            'status' => 'available',
+            'published_at' => now()->subHour(),
+        ]);
+
+        $response = $this->get('/cars?' . http_build_query(['inspection' => '3年付']));
+        $response->assertOk();
+        $response->assertSee('トヨタ アクア');
+        $response->assertDontSee('トヨタ パッソ');
+        $response->assertDontSee('トヨタ ルーミー');
+
+        $none = $this->get('/cars?' . http_build_query(['inspection' => 'なし']));
+        $none->assertOk();
+        $none->assertSee('トヨタ ルーミー');
+        $none->assertDontSee('トヨタ アクア');
+        $none->assertDontSee('トヨタ パッソ');
+    }
 }

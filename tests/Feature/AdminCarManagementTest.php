@@ -97,6 +97,32 @@ class AdminCarManagementTest extends TestCase
         $this->assertDatabaseHas('cars', ['stock_no' => 'TEST001', 'make' => 'トヨタ']);
     }
 
+    public function test_inspection_month_is_stored_only_when_type_is_ari(): void
+    {
+        $admin = $this->adminUser();
+
+        // 「あり」+ 年月 → 月初の日付として保存される
+        $this->actingAs($admin)->post(route('admin.cars.store'), $this->carData([
+            'inspection_type' => 'あり',
+            'inspection_expiry' => '2027-03',
+        ]));
+
+        $ari = Car::where('stock_no', 'TEST001')->first();
+        $this->assertSame('あり', $ari->inspection_type);
+        $this->assertSame('2027-03-01', $ari->inspection_expiry->format('Y-m-d'));
+
+        // 「あり」以外では年月を送っても保持しない
+        $this->actingAs($admin)->post(route('admin.cars.store'), $this->carData([
+            'stock_no' => 'TEST002',
+            'inspection_type' => '3年付',
+            'inspection_expiry' => '2027-03',
+        ]));
+
+        $other = Car::where('stock_no', 'TEST002')->first();
+        $this->assertSame('3年付', $other->inspection_type);
+        $this->assertNull($other->inspection_expiry);
+    }
+
     public function test_admin_can_upload_image_when_creating_car(): void
     {
         $admin = $this->adminUser();

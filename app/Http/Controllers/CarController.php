@@ -45,6 +45,11 @@ class CarController extends Controller
             $carsQuery->where('mileage', '<=', max(0, (int) $request->query('max_mileage')));
         }
 
+        $inspection = (string) $request->query('inspection', '');
+        if (in_array($inspection, Car::INSPECTION_TYPES, true)) {
+            $carsQuery->where('inspection_type', $inspection);
+        }
+
         $sort = (string) $request->query('sort', 'latest');
         match ($sort) {
             'price_asc' => $carsQuery->orderByRaw('price_negotiable ASC')->orderBy('price'),
@@ -73,6 +78,7 @@ class CarController extends Controller
                 'min_price' => (string) $request->query('min_price', ''),
                 'max_price' => (string) $request->query('max_price', ''),
                 'max_mileage' => (string) $request->query('max_mileage', ''),
+                'inspection' => $inspection,
                 'sort' => $sort,
             ],
             'makes' => (clone $publicInventory)

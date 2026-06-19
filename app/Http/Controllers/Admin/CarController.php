@@ -69,7 +69,8 @@ class CarController extends Controller
             'description' => 'nullable|string',
             'accident_count' => 'nullable|integer|min:0|max:99',
             'has_service_record' => 'nullable|boolean',
-            'inspection_expiry' => 'nullable|date',
+            'inspection_expiry' => ['nullable', 'date_format:Y-m'],
+            'inspection_type' => ['nullable', Rule::in(Car::INSPECTION_TYPES)],
             'equipment' => 'nullable|array',
             'equipment.*' => 'string',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
@@ -88,6 +89,11 @@ class CarController extends Controller
             $validated['price'] = null;
             $validated['base_price'] = null;
         }
+
+        // 車検有効期限は「あり」のときだけ保持し、年月（Y-m）を月初の日付へ正規化する
+        $validated['inspection_expiry'] = (($validated['inspection_type'] ?? null) === 'あり' && ! empty($validated['inspection_expiry']))
+            ? $validated['inspection_expiry'] . '-01'
+            : null;
 
         $this->syncMaster($validated['make'], $validated['model'], $validated['grade'] ?? null);
 
@@ -133,7 +139,8 @@ class CarController extends Controller
             'description' => 'nullable|string',
             'accident_count' => 'nullable|integer|min:0|max:99',
             'has_service_record' => 'nullable|boolean',
-            'inspection_expiry' => 'nullable|date',
+            'inspection_expiry' => ['nullable', 'date_format:Y-m'],
+            'inspection_type' => ['nullable', Rule::in(Car::INSPECTION_TYPES)],
             'equipment' => 'nullable|array',
             'equipment.*' => 'string',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
@@ -152,6 +159,11 @@ class CarController extends Controller
             $validated['price'] = null;
             $validated['base_price'] = null;
         }
+
+        // 車検有効期限は「あり」のときだけ保持し、年月（Y-m）を月初の日付へ正規化する
+        $validated['inspection_expiry'] = (($validated['inspection_type'] ?? null) === 'あり' && ! empty($validated['inspection_expiry']))
+            ? $validated['inspection_expiry'] . '-01'
+            : null;
 
         if ($request->hasFile('image')) {
             $this->deleteImage($car->image_path);
@@ -280,7 +292,7 @@ class CarController extends Controller
                 '在庫番号', 'メーカー', 'モデル', 'グレード', 'ボディタイプ',
                 'トランスミッション', '燃料', '年式', '走行距離(km)', '応談', '支払総額(円)', '車両本体価格(円)',
                 '車体色', '保管場所', 'ステータス', '注目', '公開日時', '登録日時',
-                '事故回数', '整備記録', '車検期限',
+                '事故回数', '整備記録', '車検期限', '車検区分',
             ]);
 
             foreach ($cars as $car) {
@@ -306,6 +318,7 @@ class CarController extends Controller
                     $car->accident_count,
                     $car->has_service_record ? 'あり' : 'なし',
                     $car->inspection_expiry?->format('Y-m-d'),
+                    $car->inspection_type,
                 ]);
             }
 

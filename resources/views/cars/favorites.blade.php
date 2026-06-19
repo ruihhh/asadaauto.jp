@@ -41,6 +41,11 @@
                     <dl>
                         <div><dt>年式</dt><dd>{{ $car->model_year }}年</dd></div>
                         <div><dt>走行距離</dt><dd>{{ number_format($car->mileage) }}km</dd></div>
+                        @if(($car->inspection_type === 'あり' || ! $car->inspection_type) && $car->inspection_expiry)
+                        <div><dt>車検</dt><dd>{{ $car->inspection_expiry->format('Y年m月') }}まで</dd></div>
+                        @elseif($car->inspection_type)
+                        <div><dt>車検</dt><dd>{{ $car->inspection_type }}</dd></div>
+                        @endif
                     </dl>
                 </a>
                 <div class="car-card-actions" x-data="favBtn({{ $car->id }})">

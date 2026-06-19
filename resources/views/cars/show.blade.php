@@ -240,11 +240,15 @@
                             {{ $car->has_service_record ? 'あり' : 'なし' }}
                         </span>
                     </div>
-                    @if($car->inspection_expiry)
+                    @if($car->inspection_type || $car->inspection_expiry)
                     <div class="dsg-item dsg-item-wide">
-                        <span class="dsg-label">車検期限</span>
-                        <span class="dsg-value {{ $car->inspection_expiry->isFuture() ? 'dsg-good' : '' }}">
-                            {{ $car->inspection_expiry->format('Y年m月') }}まで
+                        <span class="dsg-label">車検</span>
+                        <span class="dsg-value {{ $car->inspection_type === 'なし' ? '' : 'dsg-good' }}">
+                            @if(($car->inspection_type === 'あり' || ! $car->inspection_type) && $car->inspection_expiry)
+                                {{ $car->inspection_expiry->format('Y年m月') }}まで
+                            @else
+                                {{ $car->inspection_type }}
+                            @endif
                         </span>
                     </div>
                     @endif
@@ -329,12 +333,18 @@
                         <p class="car-point-value">{{ $car->has_service_record ? 'あり' : 'なし' }}</p>
                     </div>
                 </div>
-                @if($car->inspection_expiry)
-                <div class="car-point {{ $car->inspection_expiry->isFuture() ? 'car-point-good' : '' }}">
-                    <span class="car-point-icon">{{ $car->inspection_expiry->isFuture() ? '✓' : '—' }}</span>
+                @if($car->inspection_type || $car->inspection_expiry)
+                <div class="car-point {{ $car->inspection_type === 'なし' ? '' : 'car-point-good' }}">
+                    <span class="car-point-icon">{{ $car->inspection_type === 'なし' ? '—' : '✓' }}</span>
                     <div>
                         <p class="car-point-label">車検</p>
-                        <p class="car-point-value">{{ $car->inspection_expiry->format('Y年m月') }}まで</p>
+                        <p class="car-point-value">
+                            @if(($car->inspection_type === 'あり' || ! $car->inspection_type) && $car->inspection_expiry)
+                                {{ $car->inspection_expiry->format('Y年m月') }}まで
+                            @else
+                                {{ $car->inspection_type }}
+                            @endif
+                        </p>
                     </div>
                 </div>
                 @endif

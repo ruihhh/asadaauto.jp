@@ -379,6 +379,9 @@
                             <span>{{ number_format($car->mileage) }} km</span>
                             <span>{{ $car->body_type }}</span>
                             <span>{{ $car->transmission }}</span>
+                            @if($car->inspectionLabel())
+                                <span>{{ $car->inspectionLabel() }}</span>
+                            @endif
                         </div>
                     </div>
                 </a>
@@ -689,6 +692,9 @@
                             <span>{{ number_format($car->mileage) }} km</span>
                             <span>{{ $car->body_type }}</span>
                             <span>{{ $car->transmission }}</span>
+                            @if($car->inspectionLabel())
+                                <span>{{ $car->inspectionLabel() }}</span>
+                            @endif
                         </div>
                     </div>
                 </a>
