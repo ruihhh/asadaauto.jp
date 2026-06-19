@@ -21,7 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'is_admin',
+        // 'is_admin' はマスアサインメントによる権限昇格を防ぐため意図的に除外。
+        // 管理者付与は forceFill() で明示的に行う（seeder / factory 参照）。
     ];
 
     /**

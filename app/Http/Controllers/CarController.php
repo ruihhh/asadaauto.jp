@@ -88,8 +88,13 @@ class CarController extends Controller
         ]);
     }
 
-    public function show(Car $car): View
+    public function show(string $car): View
     {
+        $car = Car::query()
+            ->publicInventory()
+            ->where('slug', $car)
+            ->firstOrFail();
+
         $car->load('images');
 
         $relatedCars = Car::query()

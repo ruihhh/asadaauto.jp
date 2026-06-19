@@ -273,44 +273,48 @@
         <div class="section-head-row">
             <h2 class="section-heading">ボディタイプから探す</h2>
         </div>
+        @php
+            // アイコンが欠けてもページ全体が 500 にならないようガードする
+            $svgIcon = fn (string $name) => is_file($p = public_path("images/icons/body-types/{$name}.svg")) ? file_get_contents($p) : '';
+        @endphp
         <div class="body-type-grid">
             <a href="{{ route('cars.index', ['body_type' => '軽自動車']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/kei.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('kei') !!}</div>
                 <div class="body-type-name">軽自動車</div>
-                <div class="body-type-count">{{ $bodyTypeCounts->get('軽自動車', 0) }}台</div>
+                <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'軽'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index', ['body_type' => 'コンパクトカー']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/compact.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('compact') !!}</div>
                 <div class="body-type-name">コンパクト</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'コンパクト'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index', ['body_type' => 'ミニバン']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/minivan.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('minivan') !!}</div>
                 <div class="body-type-name">ミニバン</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'ミニバン'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index', ['body_type' => 'SUV']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/suv.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('suv') !!}</div>
                 <div class="body-type-name">SUV・四駆</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'SUV') || str_contains($k,'クロカン'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index', ['body_type' => 'セダン']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/sedan.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('sedan') !!}</div>
                 <div class="body-type-name">セダン</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'セダン'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index', ['body_type' => 'ハッチバック']) }}" class="body-type-card">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/hatchback.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('hatchback') !!}</div>
                 <div class="body-type-name">ハッチバック</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'ハッチ'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index', ['body_type' => 'スポーツ']) }}" class="body-type-card body-type-sport">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/sports.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('sports') !!}</div>
                 <div class="body-type-name">スポーツ</div>
                 <div class="body-type-count">{{ $bodyTypeCounts->filter(fn($v,$k) => str_contains($k,'スポーツ') || str_contains($k,'クーペ'))->sum() }}台</div>
             </a>
             <a href="{{ route('cars.index') }}" class="body-type-card body-type-card-all">
-                <div class="body-type-icon-wrap">{!! file_get_contents(public_path('images/icons/body-types/all.svg')) !!}</div>
+                <div class="body-type-icon-wrap">{!! $svgIcon('all') !!}</div>
                 <div class="body-type-name">すべて見る</div>
                 <div class="body-type-count">{{ number_format($totalPublic) }}台</div>
             </a>
