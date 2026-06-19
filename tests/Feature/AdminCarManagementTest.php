@@ -171,6 +171,28 @@ class AdminCarManagementTest extends TestCase
         $this->assertDatabaseMissing('cars', ['id' => $car->id]);
     }
 
+    public function test_admin_can_toggle_featured_by_id(): void
+    {
+        $admin = $this->adminUser();
+        $car = Car::factory()->create(['featured' => false]);
+
+        $response = $this->actingAs($admin)->patchJson("/admin/cars/{$car->id}/featured");
+
+        $response->assertOk()->assertJson(['featured' => true]);
+        $this->assertTrue($car->fresh()->featured);
+    }
+
+    public function test_admin_can_update_status_by_id(): void
+    {
+        $admin = $this->adminUser();
+        $car = Car::factory()->create(['status' => 'available']);
+
+        $response = $this->actingAs($admin)->patchJson("/admin/cars/{$car->id}/status", ['status' => 'sold']);
+
+        $response->assertOk()->assertJson(['status' => 'sold']);
+        $this->assertSame('sold', $car->fresh()->status);
+    }
+
     public function test_car_creation_requires_required_fields(): void
     {
         $admin = $this->adminUser();

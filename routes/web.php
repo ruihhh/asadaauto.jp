@@ -40,8 +40,8 @@ Route::middleware('auth')->group(function () {
         Route::get('admin/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
         Route::get('admin/cars/export', [\App\Http\Controllers\Admin\CarController::class, 'export'])->name('admin.cars.export');
         Route::delete('admin/cars/{car}/images/{image}', [\App\Http\Controllers\Admin\CarController::class, 'imageDestroy'])->name('admin.cars.images.destroy');
-        Route::patch('admin/cars/{car}/status', [\App\Http\Controllers\Admin\CarController::class, 'updateStatus'])->name('admin.cars.updateStatus');
-        Route::patch('admin/cars/{car}/featured', [\App\Http\Controllers\Admin\CarController::class, 'toggleFeatured'])->name('admin.cars.toggleFeatured');
+        Route::patch('admin/cars/{car:id}/status', [\App\Http\Controllers\Admin\CarController::class, 'updateStatus'])->name('admin.cars.updateStatus');
+        Route::patch('admin/cars/{car:id}/featured', [\App\Http\Controllers\Admin\CarController::class, 'toggleFeatured'])->name('admin.cars.toggleFeatured');
         Route::resource('admin/cars', \App\Http\Controllers\Admin\CarController::class)->names('admin.cars');
         Route::resource('admin/inquiries', \App\Http\Controllers\Admin\InquiryController::class)
             ->only(['index', 'show', 'destroy'])
