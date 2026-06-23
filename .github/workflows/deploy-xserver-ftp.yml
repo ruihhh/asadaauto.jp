@@ -83,14 +83,14 @@ jobs:
           done
 
           if [[ "${FTP_PUBLIC_HTML_DIR}" == "public/" ]]; then
-            echo "::error::FTP_PUBLIC_HTML_DIR is public/. For this Xserver deployment, use public_html/b-2026.asadaauto.jp/."
+            echo "::error::FTP_PUBLIC_HTML_DIR is public/. For this Xserver deployment, use public_html/."
             exit 1
           fi
 
           normalized_public_html_dir="${FTP_PUBLIC_HTML_DIR%/}"
 
           if [[ "${normalized_public_html_dir}" == "public_html" || "${normalized_public_html_dir}" == */public_html ]]; then
-            echo "::error::FTP_PUBLIC_HTML_DIR points to the legacy FuelPHP document root. Use public_html/b-2026.asadaauto.jp/ for this Laravel subdomain."
+            echo "::error::FTP_PUBLIC_HTML_DIR points to the legacy FuelPHP document root. Use public_html/ for this Laravel subdomain."
             exit 1
           fi
 
