@@ -5,17 +5,16 @@
 Xserver共有レンタルサーバーでは、アプリ本体をWeb公開領域の外に置く構成が安全です。
 
 - Laravel本体: `/home/<account>/<domain>/laravel_app`
-- サブドメイン公開領域: `/home/<account>/<domain>/public_html/b-2026.asadaauto.jp`
-- 旧 FuelPHP 公開領域: `/home/<account>/<domain>/public_html`
+- 公開領域: `/home/<account>/<domain>/public_html`
 
-この環境では `/home/<account>/<domain>/public_html` で旧 FuelPHP サイトが動いているため、Laravel の公開ファイルは必ず `public_html/b-2026.asadaauto.jp` 配下だけに配置します。親の `public_html` は削除・上書きしません。
+Laravel の公開ファイルは `public_html` 配下に配置します。Laravel 本体は `public_html` の外（`laravel_app`）に置きます。
 
 ## 2. アップロード
 
 1. リポジトリ全体を`laravel_app`へアップロード
-2. `deploy/xserver/public_html/index.php` を `public_html/b-2026.asadaauto.jp/index.php` にコピー
-3. `deploy/xserver/public_html/.htaccess` を `public_html/b-2026.asadaauto.jp/.htaccess` にコピー
-4. `public_html/b-2026.asadaauto.jp/index.php`の`$laravelBasePath`を実際の絶対パスに修正
+2. `deploy/xserver/public_html/index.php` を `public_html/index.php` にコピー
+3. `deploy/xserver/public_html/.htaccess` を `public_html/.htaccess` にコピー
+4. `public_html/index.php`の`$laravelBasePath`を実際の絶対パスに修正
 
 ## 3. SSHで初期化
 
@@ -86,8 +85,7 @@ Variables:
 - `FTP_LARAVEL_APP_DIR`: Laravel 本体アップロード先
   - 例: `laravel_app/` または `/home/<account>/<domain>/laravel_app/`
 - `FTP_PUBLIC_HTML_DIR`: 公開ディレクトリアップロード先
-  - この環境では `public_html/b-2026.asadaauto.jp/`
-  - `public_html/` は旧 FuelPHP サイトの公開領域なので指定しないでください
+  - この環境では `public_html/`（末尾スラッシュ必須）
 - `FTP_PORT`: 任意。未設定時は `21`
 - `FTP_PROTOCOL`: 任意。未設定時は `ftp`
   - `ftps` が使える契約なら `ftps` を推奨
