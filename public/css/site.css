@@ -14,14 +14,12 @@
     --green: #0f7a35;
     --green-light: #e6f4ec;
     --bg: #f2f4f7;
-    --surface: #ffffff;
     --line: #e0e4ea;
     --line-light: #eceef2;
     --text: #1a1d23;
     --muted: #5f6675;
     --muted-light: #9399a6;
     --brand: #C8000A;
-    --brand-dark: #960007;
     --accent: #E8650A;
     --nav-h: 48px;
     --radius: 6px;
@@ -690,13 +688,6 @@ img {
     font-weight: 400;
     color: var(--muted);
     margin-left: 4px;
-}
-
-.section-heading-count {
-    font-size: 14px;
-    color: var(--muted);
-    font-weight: 400;
-    margin-left: auto;
 }
 
 /* ============================================================
@@ -1388,128 +1379,6 @@ dd {
     flex-shrink: 0;
 }
 
-/* ステータスバッジ */
-.status-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 2px;
-    letter-spacing: .04em;
-}
-
-.status-badge-available {
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-
-.status-badge-default {
-    background: #f5f5f5;
-    color: #616161;
-}
-
-/* スペックグリッド（詳細ページ） */
-.spec-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    overflow: hidden;
-    margin: 16px 0;
-}
-
-.spec-item {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0;
-    border-bottom: 1px solid var(--line);
-    padding: 0;
-}
-
-.spec-item:nth-child(odd) {
-    border-right: 1px solid var(--line);
-}
-
-.spec-label {
-    background: #f8f8f8;
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 8px 12px;
-    width: 90px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--line);
-}
-
-.spec-value {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    padding: 8px 12px;
-}
-
-/* 価格表示（詳細ページ） */
-.detail-price {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    margin: 16px 0 6px;
-    padding: 12px 16px;
-    background: var(--red-light);
-    border-left: 4px solid var(--red);
-    border-radius: 0 4px 4px 0;
-}
-
-.detail-price-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--red);
-    letter-spacing: 0.05em;
-    margin-right: 2px;
-}
-
-.detail-price-value {
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
-    font-weight: 900;
-    color: var(--red);
-}
-
-.detail-price-unit {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--red);
-}
-
-.detail-base-price {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    margin: 0 0 20px;
-    padding: 6px 16px;
-    color: var(--text-muted, #6b7280);
-    font-size: 13px;
-}
-
-.detail-base-price-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted, #6b7280);
-}
-
-.detail-base-price-value {
-    font-weight: 700;
-    color: var(--text-muted, #6b7280);
-}
-
-/* 車両詳細レイアウト */
-.detail-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-}
-
 .detail-image {
     background: #eee;
     min-height: 320px;
@@ -1528,33 +1397,6 @@ dd {
 }
 
 .detail-image span {
-    color: var(--muted);
-    font-size: 14px;
-}
-
-.detail-content {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-}
-
-.detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 6px;
-}
-
-.detail-title {
-    margin: 0;
-    font-size: clamp(1.4rem, 2.5vw, 2rem);
-    font-weight: 900;
-    color: var(--text);
-    line-height: 1.2;
-}
-
-.detail-grade {
-    margin: 0 0 16px;
     color: var(--muted);
     font-size: 14px;
 }
@@ -1817,25 +1659,6 @@ dd {
 }
 
 .site-footer-bottom-links a:hover {
-    color: #fff;
-    text-decoration: none;
-}
-
-/* 旧フッター変数（他ページ互換） */
-.site-footer-links {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 8px;
-}
-
-.site-footer-links a {
-    color: #888;
-    text-decoration: none;
-    font-size: 12px;
-}
-
-.site-footer-links a:hover {
     color: #fff;
     text-decoration: none;
 }
@@ -2157,13 +1980,6 @@ dd {
     background: var(--red-light);
 }
 
-/* ============================================================
-   ナビゲーション（スマホ対応）
-   ============================================================ */
-.site-header-nav {
-    display: none;
-}
-
 /* 旧クラス非表示化 */
 
 @media (max-width: 768px) {
@@ -2289,16 +2105,8 @@ dd {
         grid-template-columns: 1fr;
     }
 
-    .hero-search-overlay .hero-search-form {
-        grid-template-columns: 1fr 1fr;
-    }
-
     .filter-form {
         grid-template-columns: 1fr;
-    }
-
-    .home-hero-slides {
-        height: 640px;
     }
 }
 
@@ -2506,7 +2314,6 @@ dd {
 }
 
 .home-hero-v2-count {
-    display: flex;
     flex-direction: column;
     gap: 2px;
     margin-bottom: 24px;
@@ -2517,7 +2324,6 @@ dd {
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(204, 0, 0, .07);
     display: inline-flex;
-    flex-direction: column;
 }
 
 .home-hero-v2-count-inner {
@@ -2791,365 +2597,12 @@ dd {
     }
 }
 
-/* ヒーロースライダー（旧） */
-.home-hero {
-    position: relative;
-    overflow: hidden;
-}
-
-.home-hero-slides {
-    position: relative;
-    height: 600px;
-    overflow: hidden;
-}
-
-.home-hero-slide {
-    position: absolute;
-    inset: 0;
-    color: #fff;
-    padding: 80px 0 48px;
-}
-
-.home-hero-slide::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: none;
-}
-
-.home-hero-content {
-    position: relative;
-    z-index: 1;
-    text-align: left;
-    max-width: 600px;
-    animation: heroContentIn .55s ease both;
-    animation-delay: .28s;
-}
-
-@keyframes heroContentIn {
-    from {
-        opacity: 0;
-        transform: translateY(18px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.home-hero-title {
-    margin: 0 0 12px;
-    font-size: clamp(2rem, 4vw, 3.2rem);
-    font-weight: 900;
-    line-height: 1.2;
-    color: #fff;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, .35);
-    letter-spacing: -.01em;
-}
-
-.home-hero-title span {
-    color: #FFD600;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, .2);
-}
-
-.home-hero-sub {
-    margin: 0 0 28px;
-    font-size: 15px;
-    color: rgba(255, 255, 255, .88);
-    letter-spacing: .06em;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, .25);
-}
-
-.home-hero-btns {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-}
-
-.btn-hero-ghost {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 46px;
-    padding: 12px 24px;
-    border: 2px solid rgba(255, 255, 255, .7);
-    border-radius: 3px;
-    background: transparent;
-    color: #fff;
-    font-weight: 700;
-    font-size: 15px;
-    text-decoration: none;
-    transition: background .15s, border-color .15s;
-}
-
-.btn-hero-ghost:hover {
-    background: rgba(255, 255, 255, .15);
-    text-decoration: none;
-    color: #fff;
-    border-color: #fff;
-}
-
-/* プログレスバー（検索オーバーレイ最上部） */
-.home-hero-progress {
-    height: 3px;
-    background: rgba(255, 255, 255, .12);
-}
-
-.home-hero-progress-bar {
-    height: 100%;
-    background: var(--red);
-    transition: width .1s linear;
-    border-radius: 0 2px 2px 0;
-}
-
-/* 検索 & コントロール オーバーレイ */
-.hero-search-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
-    background: rgba(255, 255, 255, .97);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 3px solid var(--red);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, .12);
-}
-
-.hero-search-panel {
-    padding: 14px 0 18px;
-}
-
-.hero-search-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    gap: 12px;
-}
-
-.hero-search-nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-}
-
-.hero-search-overlay .hero-search-title {
-    color: var(--text);
-    border-bottom: none;
-    margin: 0;
-    padding: 0;
-    font-size: 13px;
-    font-weight: 900;
-}
-
-.hero-search-overlay .hero-search-title::before {
-    display: none;
-}
-
-.hero-search-overlay .hero-search-title span {
-    color: var(--muted);
-    font-weight: 400;
-    font-size: 11px;
-}
-
-.hero-search-overlay .hero-search-field label {
-    color: var(--muted);
-}
-
-.hero-search-overlay .hero-search-field select,
-.hero-search-overlay .hero-search-field input {
-    background: #fff;
-    border-color: var(--line);
-    color: var(--text);
-}
-
-.hero-search-overlay .hero-search-field select:focus,
-.hero-search-overlay .hero-search-field input:focus {
-    border-color: var(--red);
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(204, 0, 0, .1);
-    outline: none;
-}
-
-.hero-search-overlay .hero-dot {
-    background: rgba(0, 0, 0, .2);
-}
-
-.hero-search-overlay .hero-dot.dot-active {
-    background: var(--red);
-    width: 24px;
-}
-
 .hero-search-overlay .hero-dot:hover:not(.dot-active) {
     background: rgba(0, 0, 0, .4);
 }
 
-.hero-search-overlay .home-hero-counter {
-    color: var(--muted);
-}
-
-.hero-search-overlay .home-hero-counter strong {
-    color: var(--text);
-}
-
-/* Prev / Next 矢印 */
-.home-hero-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 20;
-    background: rgba(0, 0, 0, .28);
-    border: 1.5px solid rgba(255, 255, 255, .3);
-    color: #fff;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .15s, border-color .15s;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    min-height: unset;
-    padding: 0;
-}
-
-.home-hero-nav:hover {
-    background: rgba(0, 0, 0, .52);
-    border-color: rgba(255, 255, 255, .65);
-}
-
-.home-hero-prev {
-    left: 16px;
-}
-
-.home-hero-next {
-    right: 16px;
-}
-
-/* ドット + カウンター */
-.home-hero-controls {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    z-index: 20;
-    white-space: nowrap;
-}
-
-.home-hero-dots {
-    display: flex;
-    gap: 6px;
-}
-
-.hero-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 4px;
-    border: none;
-    background: rgba(255, 255, 255, .4);
-    cursor: pointer;
-    padding: 0;
-    transition: background .2s, width .25s ease;
-    min-height: unset;
-}
-
-.hero-dot.dot-active {
-    background: #fff;
-    width: 24px;
-}
-
 .hero-dot:hover:not(.dot-active) {
     background: rgba(255, 255, 255, .7);
-}
-
-.home-hero-counter {
-    font-size: 11px;
-    color: rgba(255, 255, 255, .65);
-    font-weight: 600;
-    letter-spacing: .1em;
-    font-variant-numeric: tabular-nums;
-}
-
-.home-hero-counter strong {
-    color: #fff;
-    font-weight: 700;
-}
-
-/* ============================================================
-   在庫カウンターバナー
-   ============================================================ */
-.home-count-banner {
-    background: linear-gradient(135deg, #CC0000 0%, #a30000 100%);
-    color: #fff;
-    padding: 20px 0;
-    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .15);
-}
-
-.home-count-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.home-count-left {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.home-count-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, .9);
-}
-
-.home-count-num {
-    font-size: 42px;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -.02em;
-}
-
-.home-count-unit {
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.home-count-right {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.home-count-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 38px;
-    padding: 8px 20px;
-    border: 1px solid rgba(255, 255, 255, .6);
-    border-radius: 3px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: background .15s;
-}
-
-.home-count-link:hover {
-    background: rgba(255, 255, 255, .15);
-    text-decoration: none;
-    color: #fff;
 }
 
 /* ============================================================
@@ -3190,11 +2643,6 @@ dd {
     border-color: var(--red);
     background: var(--red-light);
     color: var(--red);
-}
-
-.body-type-icon {
-    font-size: 30px;
-    line-height: 1;
 }
 
 .body-type-name {
@@ -3280,12 +2728,6 @@ dd {
     padding: 2px 8px;
     border-radius: 0 0 4px 4px;
     letter-spacing: .08em;
-}
-
-.point-icon {
-    font-size: 36px;
-    margin-bottom: 12px;
-    line-height: 1;
 }
 
 .point-title {
@@ -3443,118 +2885,6 @@ dd {
 }
 
 /* ============================================================
-   おすすめ特集
-   ============================================================ */
-.specials-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-}
-
-.special-block {
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.special-block-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 16px 12px;
-    border-bottom: 2px solid var(--red);
-    background: var(--red-light);
-}
-
-.special-block-title {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 900;
-    color: var(--text);
-}
-
-.special-block-more {
-    font-size: 12px;
-    color: var(--red);
-    font-weight: 700;
-    text-decoration: none;
-}
-
-.special-block-more:hover {
-    text-decoration: underline;
-}
-
-.special-cars {
-    display: flex;
-    flex-direction: column;
-}
-
-.special-car-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--line);
-    text-decoration: none;
-    color: var(--text);
-    transition: background .15s;
-}
-
-.special-car-item:last-child {
-    border-bottom: none;
-}
-
-.special-car-item:hover {
-    background: var(--bg);
-    text-decoration: none;
-}
-
-.special-car-img {
-    width: 72px;
-    height: 54px;
-    border-radius: 3px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #eee;
-}
-
-.special-car-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.special-car-body {
-    flex: 1;
-    min-width: 0;
-}
-
-.special-car-name {
-    margin: 0 0 2px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.special-car-price {
-    margin: 0 0 2px;
-    font-size: 14px;
-    font-weight: 900;
-    color: var(--red);
-}
-
-.special-car-spec {
-    margin: 0;
-    font-size: 11px;
-    color: var(--muted);
-}
-
-/* ============================================================
    お知らせ
    ============================================================ */
 .news-list {
@@ -3613,35 +2943,6 @@ dd {
 }
 
 /* ============================================================
-   店舗情報テーブル
-   ============================================================ */
-.store-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.store-table tr {
-    border-bottom: 1px solid var(--line);
-}
-
-.store-table th {
-    padding: 8px 12px 8px 0;
-    text-align: left;
-    color: var(--muted);
-    font-weight: 700;
-    white-space: nowrap;
-    width: 72px;
-    vertical-align: top;
-}
-
-.store-table td {
-    padding: 8px 0;
-    color: var(--text);
-    line-height: 1.6;
-}
-
-/* ============================================================
    オーナーズボイス
    ============================================================ */
 .owners-grid {
@@ -3663,24 +2964,6 @@ dd {
 .owner-card:hover {
     box-shadow: 0 8px 28px rgba(0,0,0,.1);
     transform: translateY(-3px);
-}
-
-.owner-car-img {
-    width: 100%;
-    height: 140px;
-    background: #f0f0f0;
-    overflow: hidden;
-}
-
-.owner-car-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.owner-body {
-    padding: 16px;
 }
 
 .owner-car {
@@ -3771,23 +3054,6 @@ dd {
 }
 
 @media (max-width: 640px) {
-    .home-hero-slides {
-        height: 600px;
-    }
-
-    .home-hero-slide {
-        padding: 48px 0 0;
-    }
-
-    .home-hero-nav {
-        display: none;
-    }
-
-    .hero-search-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
 
     .body-type-grid {
         grid-template-columns: repeat(4, 1fr);
@@ -3801,10 +3067,6 @@ dd {
         grid-template-columns: 1fr;
     }
 
-    .specials-grid {
-        grid-template-columns: 1fr;
-    }
-
     .owners-grid {
         grid-template-columns: 1fr;
     }
@@ -3812,16 +3074,6 @@ dd {
     .home-cta-inner {
         flex-direction: column;
         text-align: center;
-    }
-
-    .home-count-inner {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .home-hero-btns {
-        flex-direction: column;
-        align-items: flex-start;
     }
 }
 
@@ -3871,8 +3123,6 @@ dd {
 }
 
 /* ── 左テキスト ── */
-.buy-hero-text {}
-
 .buy-hero-title {
     margin: 10px 0 12px;
     font-size: clamp(2.2rem, 4vw, 3.4rem);
@@ -4034,8 +3284,6 @@ dd {
 }
 
 /* ── 右フォームカード ── */
-.buy-hero-form-wrap { }
-
 .buy-hero-form-card {
     background: #fff;
     border-radius: 14px;
@@ -5489,46 +4737,6 @@ dd {
     }
 }
 
-/* 日本式スペシャル見出し */
-.jp-section-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .12em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-}
-
-.jp-section-label::before,
-.jp-section-label::after {
-    content: '';
-    display: block;
-    width: 24px;
-    height: 1px;
-    background: var(--line);
-}
-
-/* 価格タグ - 万円表示 */
-.price-man {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 2px;
-    color: var(--red);
-    font-weight: 900;
-}
-
-.price-man-num {
-    font-size: 22px;
-}
-
-.price-man-unit {
-    font-size: 13px;
-    font-weight: 700;
-}
-
 /* ランキング番号バッジ改善 */
 .ranking-num-1 {
     background: linear-gradient(135deg, #FFD700, #FFA500);
@@ -5586,32 +4794,6 @@ dd {
     letter-spacing: .04em;
 }
 
-/* 在庫ステータスバッジ */
-.status-badge-available {
-    background: var(--green-light);
-    color: var(--green);
-    border: 1px solid rgba(26, 124, 62, .2);
-}
-
-.status-badge-default {
-    background: #f0f0f0;
-    color: #888;
-    border: 1px solid #ddd;
-}
-
-/* 詳細ページ価格 */
-.detail-price {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    margin: 16px 0 6px;
-    padding: 14px 18px;
-    background: linear-gradient(135deg, #fff5f5, #fff8f8);
-    border-left: 4px solid var(--red);
-    border-radius: 0 6px 6px 0;
-    box-shadow: var(--shadow-sm);
-}
-
 /* 検索フィルターパネル改善 */
 .filter-panel {
     background: #fff;
@@ -5649,18 +4831,6 @@ dd {
     text-align: left;
     font-weight: 700;
     letter-spacing: .02em;
-}
-
-/* スペックグリッド改善 */
-.spec-label {
-    background: linear-gradient(to right, #f8f8f8, #f4f4f4);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 9px 12px;
-    width: 90px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--line);
 }
 
 /* LINE シェアボタン */
@@ -5955,10 +5125,6 @@ dd {
     align-items: center;
     gap: 10px;
     letter-spacing: -.01em;
-}
-
-.store-card-title-icon {
-    font-size: 18px;
 }
 
 .store-card-title-badge {
@@ -6811,21 +5977,6 @@ dd {
     gap: 4px;
 }
 
-.home-stat-number {
-    font-size: 40px;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: -.03em;
-    line-height: 1;
-}
-
-.home-stat-unit {
-    font-size: 16px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, .9);
-    margin-left: 3px;
-}
-
 .home-stat-label {
     font-size: 14px;
     color: rgba(255, 255, 255, .8);
@@ -6868,7 +6019,6 @@ dd {
 }
 
 .body-type-card:hover {
-    border-top-color: var(--red);
     border-color: rgba(230, 0, 16, .25);
     border-top-color: var(--red);
     color: var(--text);
@@ -7471,10 +6621,6 @@ dd {
         padding: 8px 16px;
     }
 
-    .home-stat-number {
-        font-size: 30px;
-    }
-
     .home-stats-inner {
         gap: 0;
     }
@@ -7581,14 +6727,6 @@ dl div {
 /* ---- ページネーション ---- */
 .pagination a,
 .pagination span {
-    font-size: 14px;
-}
-
-/* ---- 詳細ページ ---- */
-.spec-label {
-    font-size: 13px;
-}
-.spec-value {
     font-size: 14px;
 }
 .detail-description h3 {
@@ -8499,30 +7637,6 @@ dl div {
     .advisor-use-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-}
-
-/* ========================================
-   応談スタイル
-======================================== */
-
-/* ---- 詳細ページ ---- */
-.detail-price-negotiable {
-    background: #fafafa;
-    border-left-color: #555;
-    align-items: center;
-    gap: 14px;
-}
-.detail-price-negotiable-badge {
-    font-size: 1.7rem;
-    font-weight: 900;
-    color: #1a1a1a;
-    letter-spacing: .22em;
-    line-height: 1;
-}
-.detail-price-negotiable-text {
-    font-size: 13px;
-    font-weight: 600;
-    color: #666;
 }
 
 /* ---- カード画像オーバーレイ ---- */
@@ -9598,7 +8712,6 @@ dl div {
     width: 100%;
     height: 8px;
     border-radius: 999px;
-    background: linear-gradient(to right, var(--red) 0%, #f5c2c5 0%);
     background: #ececf1;
     outline: none;
 }
