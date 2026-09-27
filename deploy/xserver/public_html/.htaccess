@@ -5,6 +5,13 @@
 
     RewriteEngine On
 
+    # 正規 URL を https://asadaauto.jp（www なし）に統一する。
+    # www あり・http のアクセスは、パスとクエリを保ったまま 301 で1回だけ転送する。
+    RewriteCond %{HTTP_HOST} ^www\.asadaauto\.jp$ [NC,OR]
+    RewriteCond %{HTTPS} !on
+    RewriteCond %{HTTP_HOST} ^(www\.)?asadaauto\.jp$ [NC]
+    RewriteRule ^ https://asadaauto.jp%{REQUEST_URI} [L,R=301]
+
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
