@@ -1,518 +1,578 @@
 @extends('layouts.site')
 
-@section('title', '店舗情報・アクセス｜尼崎市下坂部の中古車販売店')
-@section('meta_description', '兵庫県尼崎市下坂部4丁目5-1。電話06-4960-8765。営業時間11:00〜21:00（木曜・第3日曜定休）。無料駐車場完備・全国陸送対応のアサダオートサポート。')
-@section('og_title', '店舗情報・アクセス | ' . config('app.name'))
-@section('og_description', '兵庫県尼崎市下坂部の中古車販売店。第三者検査・総額表示・整備履歴公開。試乗・査定は予約不要。')
-@section('canonical', route('store'))
+@php
+    use App\Support\BusinessHours;
+    use Illuminate\Support\HtmlString;
 
-@section('structured_data')
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@type": "AutoDealer",
-    "@id": "{{ url('/') }}#organization",
-    "name": "{{ config('app.name') }}",
-    "url": "{{ url('/') }}",
-    "telephone": "06-4960-8765",
-    "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "下坂部4丁目5-1",
-        "addressLocality": "尼崎市",
-        "addressRegion": "兵庫県",
-        "postalCode": "661-0975",
-        "addressCountry": "JP"
-    },
-    "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": 34.7167,
-        "longitude": 135.4167
-    },
-    "hasMap": "https://maps.google.com/?q=兵庫県尼崎市下坂部4丁目5-1",
-    "keywords": "中古車,尼崎,兵庫県,尼崎市中古車,兵庫県中古車,中古車販売",
-    "areaServed": [
-        {"@type":"City","name":"尼崎市"},
-        {"@type":"City","name":"西宮市"},
-        {"@type":"City","name":"伊丹市"},
-        {"@type":"City","name":"宝塚市"},
-        {"@type":"City","name":"川西市"},
-        {"@type":"City","name":"神戸市"},
-        {"@type":"City","name":"大阪市"},
-        {"@type":"City","name":"豊中市"},
-        {"@type":"AdministrativeArea","name":"兵庫県"},
-        {"@type":"AdministrativeArea","name":"大阪府"}
-    ],
-    "openingHoursSpecification": [
-        {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday","Tuesday","Wednesday","Friday","Saturday","Sunday"],
-            "opens": "11:00",
-            "closes": "21:00"
+    $shopName = config('shop.name');
+    $tel = config('shop.tel');
+    $telHref = config('shop.tel_href');
+    $lineUrl = config('shop.line_url');
+    $parking = (string) config('shop.parking');
+    $closedLabel = (string) config('shop.closed_label');
+    $directionsUrl = config('shop.directions_url');
+    $hoursLabel = BusinessHours::hoursLabel();
+    $hours = (array) config('shop.hours', []);
+    $kobutsu = (array) config('shop.kobutsu', []);
+    $operator = (array) config('shop.operator', []);
+    $businessLines = array_values(array_filter((array) config('shop.business_lines', []), 'filled'));
+    // 「中古車販売・買取・車検・…」を業務名の途中で改行しない形にする（「車／検」のような改行を防ぐ）
+    $businessLinesText = new HtmlString(collect($businessLines)->map(fn ($line, $i) => '<span class="u-nowrap">'.e($line).($i < count($businessLines) - 1 ? '・' : '').'</span>')->implode(''));
+
+    // 地図の埋め込み：config に URL があればそれを使い、なければ住所で検索した Google マップを埋め込む
+    $mapEmbedUrl = config('shop.map_embed_url')
+        ?: 'https://maps.google.com/maps?q='.rawurlencode((string) config('shop.address')).'&output=embed&z=16&hl=ja';
+
+    $pageDescription = '兵庫県尼崎市下坂部の中古車販売店'.$shopName.'の店舗案内です。住所・地図、お車・電車・バスでの行き方、営業時間（'.BusinessHours::summary().'）、駐車場をご案内します。';
+
+    // 語の単位でだけ折り返す（狭いスマホで「定休／日」のような語の途中の改行を防ぐ）。
+    // 外側を1つの span で包む（横並びの部品の中に置いても、語と語の間にすき間ができないように）
+    $nowrap = fn (array $parts) => new HtmlString('<span>'.collect($parts)->map(fn ($part) => '<span class="u-nowrap">'.e($part).'</span>')->implode('').'</span>');
+
+    // ---- 営業時間・定休日（判定はすべて BusinessHours。日付は東京の暦日） ----
+    $weekdayShort = ['日', '月', '火', '水', '木', '金', '土'];
+    $today = \Carbon\CarbonImmutable::instance(now())->setTimezone(BusinessHours::TIMEZONE)->startOfDay();
+
+    // 定休日の決まり（config の曜日から作る）：毎週 木曜日／毎月 第3日曜日
+    $closedRules = [];
+    foreach ((array) config('shop.closed_weekdays', []) as $weekday) {
+        $closedRules[] = ['cycle' => '毎週', 'day' => $weekdayShort[(int) $weekday].'曜日'];
+    }
+    $nthRules = (array) config('shop.closed_nth_weekdays', []);
+    foreach ($nthRules as [$nth, $weekday]) {
+        $closedRules[] = ['cycle' => '毎月', 'day' => '第'.(int) $nth.$weekdayShort[(int) $weekday].'曜日'];
+    }
+
+    // 次の第3日曜（今日が第3日曜のときは営業時間表の「本日は定休日です」で伝わるので、明日以降から探す）
+    $nthLabel = $nthRules !== [] ? '第'.(int) $nthRules[0][0].$weekdayShort[(int) $nthRules[0][1]].'曜' : null;
+    $nextNthDates = $nthRules !== [] ? BusinessHours::upcomingNthClosed(3, $today->addDay()) : [];
+    $holidays = BusinessHours::upcomingHolidays($today);
+
+    // 営業日カレンダー（今月・来月。日曜はじまり）
+    $calendars = [];
+    foreach ([0, 1] as $offset) {
+        $month = $today->startOfMonth()->addMonthsNoOverflow($offset);
+        $cells = array_fill(0, $month->dayOfWeek, null);
+        for ($day = 1; $day <= $month->daysInMonth; $day++) {
+            $date = $month->setDay($day);
+            $cells[] = [
+                'day' => $day,
+                'reason' => BusinessHours::closedReason($date),
+                'today' => $date->isSameDay($today),
+                'past' => $date->lt($today),
+            ];
         }
-    ],
-    "amenityFeature": [
-        {"@type":"LocationFeatureSpecification","name":"無料駐車場","value":true},
-        {"@type":"LocationFeatureSpecification","name":"試乗可能","value":true},
-        {"@type":"LocationFeatureSpecification","name":"全国陸送納車","value":true},
-        {"@type":"LocationFeatureSpecification","name":"ローン対応","value":true},
-        {"@type":"LocationFeatureSpecification","name":"下取り・買取","value":true}
-    ]
-}
-</script>
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-        {
-            "@type": "Question",
-            "name": "試乗はできますか？",
-            "acceptedAnswer": {"@type":"Answer","text":"はい、在庫車両のほとんどで試乗可能です。お気軽にスタッフまでお申し付けください。運転免許証をお持ちいただければすぐにご対応します。"}
-        },
-        {
-            "@type": "Question",
-            "name": "県外への納車はできますか？",
-            "acceptedAnswer": {"@type":"Answer","text":"全国どこでも納車対応しております。陸送費は距離によって異なりますが、詳しくはお問い合わせください。"}
-        },
-        {
-            "@type": "Question",
-            "name": "ローンの審査は難しいですか？",
-            "acceptedAnswer": {"@type":"Answer","text":"複数の提携ローン会社と提携しており、他社で断られた方でもご相談いただける場合があります。まずはお気軽にご相談ください。"}
-        },
-        {
-            "@type": "Question",
-            "name": "車の下取りはできますか？",
-            "acceptedAnswer": {"@type":"Answer","text":"はい、メーカー・年式・走行距離を問わず、どのようなお車でも査定いたします。他社の見積もりがある場合はぜひご提示ください。"}
-        },
-        {
-            "@type": "Question",
-            "name": "購入後のメンテナンスはお願いできますか？",
-            "acceptedAnswer": {"@type":"Answer","text":"もちろんです。自社整備工場にて車検・点検・修理・板金塗装まで幅広く承っております。購入後も長くお付き合いいただけます。"}
-        },
-        {
-            "@type": "Question",
-            "name": "土日・祝日も営業していますか？",
-            "acceptedAnswer": {"@type":"Answer","text":"土曜日・日曜日・祝日も営業しております（11:00〜21:00）。木曜日および第3日曜日が定休日となっております。"}
+        while (count($cells) % 7 !== 0) {
+            $cells[] = null;
         }
-    ]
-}
-</script>
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-        {"@type":"ListItem","position":1,"name":"ホーム","item":"{{ url('/') }}"},
-        {"@type":"ListItem","position":2,"name":"店舗情報・アクセス","item":"{{ route('store') }}"}
-    ]
-}
-</script>
-@endsection
+        $calendars[] = [
+            'tab' => ($offset === 0 ? '今月' : '来月').'（'.$month->month.'月）',
+            'caption' => $month->year.'年'.$month->month.'月の営業日カレンダー（定休日に印を付けています）',
+            'weeks' => array_chunk($cells, 7),
+        ];
+    }
+
+    // ---- 当店でできること（看板の6業務。config の業務名から作る） ----
+    $publicCount = \App\Models\Car::publicInventory()->count();
+    $contactOther = route('contact.index', ['purpose' => 'other']);
+    $serviceDefs = [
+        '中古車販売' => ['icon' => 'car', 'tone' => 'red', 'href' => route('cars.index'), 'text' => '価格は税込の支払総額で掲載しています', 'more' => '在庫を見る', 'count' => $publicCount],
+        '買取' => ['icon' => 'yen', 'tone' => 'yellow', 'href' => route('buy.index'), 'text' => '査定は無料です。査定だけでも大丈夫です', 'more' => '無料査定を申し込む'],
+        '車検' => ['icon' => 'cal-check', 'tone' => 'black', 'href' => $contactOther, 'text' => '車検のご予約・ご相談', 'more' => '相談する'],
+        '一般整備' => ['icon' => 'wrench', 'tone' => 'red', 'href' => $contactOther, 'text' => '点検・修理のご相談', 'more' => '相談する'],
+        '板金' => ['icon' => 'bankin', 'tone' => 'yellow', 'href' => $contactOther, 'text' => 'キズ・へこみの修理のご相談', 'more' => '相談する'],
+        '保険' => ['icon' => 'shield', 'tone' => 'black', 'href' => $contactOther, 'text' => 'お車の保険のご相談', 'more' => '相談する'],
+    ];
+    $services = array_map(fn (string $name) => ['name' => $name] + ($serviceDefs[$name] ?? [
+        'icon' => 'check', 'tone' => 'red', 'href' => $contactOther, 'text' => $name.'のご相談', 'more' => '相談する',
+    ]), $businessLines);
+
+    // ---- 会社概要（値が null の行は出さない） ----
+    $representative = $operator['representative'] ?? null;
+    if (filled($representative) && filled($operator['representative_kana'] ?? null)) {
+        $representative .= '（'.$operator['representative_kana'].'）';
+    }
+    $kobutsuText = filled($kobutsu['number'] ?? null)
+        ? trim(($kobutsu['authority'] ?? '').' 第'.$kobutsu['number'].'号'.(filled($kobutsu['holder'] ?? null) ? '（'.$kobutsu['holder'].'）' : ''))
+        : null;
+
+    // ---- よくある質問（店舗について）。画面と FAQPage の構造化データを同じ配列から出す ----
+    $faqItems = [
+        [
+            'q' => '予約をしないでお店に行ってもいいですか？',
+            'a' => 'はい、予約なしでもご来店いただけます。ただし、在庫の車の中には当店以外の場所で保管している車もあります。見たい車が決まっている場合は、ご来店の前にお電話かお問い合わせフォームで、車の展示場所をご確認ください。',
+        ],
+        [
+            'q' => '駐車場はありますか？',
+            'a' => 'はい、無料の駐車場があります。お車でそのままお越しください。',
+        ],
+        [
+            'q' => '電車で行く場合、駅まで迎えに来てもらえますか？',
+            'a' => 'はい、事前にご連絡いただければ、駅までお迎えに参ります。ご来店の前に、お電話（'.$tel.'）でお知らせください。',
+        ],
+        [
+            'q' => '土曜・日曜や祝日も営業していますか？',
+            'a' => 'はい、土曜・日曜・祝日も'.$hoursLabel.'で営業しています。定休日は'.$closedLabel.'です。',
+        ],
+    ];
+
+    $breadcrumbSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'ホーム', 'item' => route('home')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => '店舗案内・アクセス', 'item' => route('store')],
+        ],
+    ];
+@endphp
+
+@section('title', '店舗案内・アクセス')
+@section('meta_description', $pageDescription)
+@section('og_title', '店舗案内・アクセス | '.$shopName)
+@section('og_description', $pageDescription)
+@section('og_image', asset('images/store-hero-bg.png'))
+@section('canonical', route('store'))
+@section('body_class', 'p-store')
+
+@push('structured_data')
+    <script type="application/ld+json">{!! json_encode($breadcrumbSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
+@endpush
+
+@push('head')
+    <link rel="preload" as="image" href="{{ asset('images/store-hero-bg.png.webp') }}" type="image/webp">
+@endpush
 
 @section('content')
 
-{{-- ============================================================
-     ページヒーロー
-     ============================================================ --}}
-<div class="store-hero">
-    <div class="container">
-        <nav class="breadcrumb">
-            <span><a href="{{ route('home') }}">ホーム</a></span>
-            <span>店舗情報・アクセス</span>
-        </nav>
-        <div class="store-hero-content">
-            <p class="hero-eyebrow">STORE INFO</p>
-            <h1 class="store-hero-title">店舗情報・アクセス</h1>
-            <p class="store-hero-sub">{{ config('app.name') }}へのアクセス方法・営業時間のご案内</p>
-            <div class="store-hero-stats">
-                <div class="store-hero-stat">
-                    <strong>地域密着</strong><span>尼崎市下坂部</span>
-                </div>
-                <div class="store-hero-stat-divider"></div>
-                <div class="store-hero-stat">
-                    <strong>常時 100台+</strong><span>在庫車両</span>
-                </div>
-                <div class="store-hero-stat-divider"></div>
-                <div class="store-hero-stat">
-                    <strong>全国対応</strong><span>陸送納車</span>
-                </div>
-                <div class="store-hero-stat-divider"></div>
-                <div class="store-hero-stat">
-                    <strong>無料</strong><span>駐車場完備</span>
-                </div>
-            </div>
-        </div>
+<div class="p-store-crumb">
+    <div class="l-container">
+        <x-site.breadcrumb :items="[['label' => '店舗案内・アクセス']]" />
     </div>
 </div>
 
-{{-- ============================================================
-     クイック情報バー
-     ============================================================ --}}
-<div class="store-quick-bar">
-    <div class="container">
-        <div class="store-quick-inner">
-            <div class="store-quick-item">
-                <span class="store-quick-icon">📞</span>
-                <div>
-                    <p class="store-quick-label">お電話でのお問い合わせ</p>
-                    <a href="tel:06-4960-8765" class="store-quick-tel">06-4960-8765</a>
+{{-- 1. 写真ヒーロー：看板入りの店舗外観に、斜め帯の見出し・住所の札・営業状況のピル --}}
+<section class="c-hero p-store-top" aria-labelledby="store-title">
+    <picture>
+        <source type="image/webp" srcset="{{ asset('images/store-hero-bg.png.webp') }}">
+        <img class="c-hero__img" src="{{ asset('images/store-hero-bg.png') }}" alt="{{ $shopName }}の店舗外観。「車検・中古車・買取・一般整備・板金・保険」の看板の前に、展示車が並んでいる" width="1584" height="672" fetchpriority="high">
+    </picture>
+    <div class="l-container c-hero__inner">
+        <p class="c-hero__tag"><x-site.icon name="map-pin" /><span><x-site.address postal /></span></p>
+        <h1 class="c-hero__catch" id="store-title">
+            <span class="c-slant c-slant--black">店舗案内・</span>
+            <span class="c-slant c-slant--red">アクセス</span>
+        </h1>
+        <p class="c-slant c-slant--white c-hero__sub"><span class="u-nowrap"><em>お車</em>でも、</span><span class="u-nowrap"><em>電車・バス</em>でも、</span><span class="u-nowrap">お越しいただけます。</span></p>
+        <p class="c-hero__pill"><x-site.open-status />{{ $hoursLabel }}｜{{ $closedLabel }}定休</p>
+        <p class="c-hero__caption">写真：店舗外観（この看板が目印です）</p>
+    </div>
+</section>
+
+{{-- 2. お店の基本情報：ヒーローの下端に重ねる白いパネル（看板の拡大写真＋住所・営業状況・営業時間・定休日・電話・駐車場） --}}
+<section class="p-store-basic" aria-labelledby="store-basic-title">
+    <div class="l-container">
+        <div class="p-store-deck">
+            <figure class="p-store-sign">
+                <div class="p-store-sign__frame">
+                    <picture>
+                        <source type="image/webp" srcset="{{ asset('images/store-hero-bg.png.webp') }}">
+                        <img class="p-store-sign__img" src="{{ asset('images/store-hero-bg.png') }}" width="1584" height="672" loading="lazy"
+                             alt="店舗の看板を大きく写した写真。「車検・中古車・買取・一般整備・板金・保険」「Asada Auto Support」と電話番号が書かれている">
+                    </picture>
                 </div>
-            </div>
-            <div class="store-quick-divider"></div>
-            <div class="store-quick-item">
-                <span class="store-quick-icon">🕐</span>
+                <ul class="p-store-sign__badges" role="list">
+                    @if (str_contains($parking, '無料'))
+                        <li><x-site.round-badge variant="yellow" top="無料" num="駐車場" bottom="あり" /></li>
+                    @endif
+                    <li><x-site.round-badge variant="yellow" top="駅まで" num="送迎" bottom="要事前連絡" /></li>
+                </ul>
+                <figcaption class="c-slant c-slant--yellow p-store-sign__label"><x-site.icon name="map-pin" />この看板が目印です</figcaption>
+            </figure>
+
+            <div class="p-store-info">
+                <h2 class="p-store-info__label" id="store-basic-title">お店の基本情報</h2>
                 <div>
-                    <p class="store-quick-label">営業時間</p>
-                    <p class="store-quick-val">月〜水・金〜日 11:00〜21:00 <span class="store-holiday-badge">木曜・第3日曜定休</span></p>
+                    <p class="p-store-info__name">{{ $shopName }}</p>
+                    <p class="p-store-info__lead">兵庫県尼崎市下坂部の中古車販売店です。お車でも、電車・バスでもお越しいただけます。</p>
                 </div>
+
+                <x-site.open-status variant="badge" class="p-store-info__status" />
+
+                <dl class="p-store-facts">
+                    <div class="p-store-facts__row p-store-facts__row--wide">
+                        <dt class="p-store-facts__label"><span class="p-store-facts__ic"><x-site.icon name="map-pin" /></span>住所</dt>
+                        <dd class="p-store-facts__value"><x-site.address postal /></dd>
+                    </div>
+                    <div class="p-store-facts__row">
+                        <dt class="p-store-facts__label"><span class="p-store-facts__ic"><x-site.icon name="clock" /></span>営業時間</dt>
+                        <dd class="p-store-facts__value p-store-facts__value--num">{{ $hoursLabel }}</dd>
+                    </div>
+                    <div class="p-store-facts__row">
+                        <dt class="p-store-facts__label"><span class="p-store-facts__ic p-store-facts__ic--closed"><x-site.icon name="calendar" /></span>定休日</dt>
+                        <dd class="p-store-facts__value p-store-facts__value--closed">{{ $closedLabel }}</dd>
+                    </div>
+                    <div class="p-store-facts__row p-store-facts__row--wide">
+                        <dt class="p-store-facts__label"><span class="p-store-facts__ic"><x-site.icon name="phone" /></span>電話</dt>
+                        <dd class="p-store-facts__value">
+                            <a class="p-store-facts__tel" href="{{ $telHref }}" aria-label="電話をかける {{ $tel }}">{{ $tel }}</a>
+                        </dd>
+                    </div>
+                    <div class="p-store-facts__row p-store-facts__row--wide">
+                        <dt class="p-store-facts__label"><span class="p-store-facts__ic"><x-site.icon name="parking" /></span>駐車場</dt>
+                        <dd class="p-store-facts__value">{{ $parking }}</dd>
+                    </div>
+                </dl>
             </div>
-            <div class="store-quick-divider"></div>
-            <div class="store-quick-item">
-                <span class="store-quick-icon">📍</span>
-                <div>
-                    <p class="store-quick-label">所在地</p>
-                    <p class="store-quick-val">〒661-0975 兵庫県尼崎市下坂部4丁目5-1</p>
-                </div>
+
+            <div class="p-store-actions">
+                <x-site.btn2 :href="$telHref" icon="phone" size="xl" block small="お電話でのご相談はこちら" big="電話する"
+                             :aria-label="'電話をかける '.$tel" />
+                <x-site.btn2 :href="$directionsUrl" variant="black" icon="route" size="xl" block target="_blank" rel="noopener"
+                             small="今いる場所からの道順がわかります" :big="$nowrap(['地図アプリで', '道順を見る'])"
+                             aria-label="地図アプリで道順を見る（新しいタブで開きます）" />
+                @if ($lineUrl)
+                    <a class="c-btn c-btn--line c-btn--lg c-btn--block p-store-actions__line" href="{{ $lineUrl }}" target="_blank" rel="noopener">
+                        <x-site.icon name="line" />LINEで相談<span class="u-visually-hidden">（新しいタブで開きます）</span>
+                    </a>
+                @endif
             </div>
+
+            <nav class="p-store-jump" aria-label="このページの内容">
+                <p class="p-store-jump__label">このページの内容</p>
+                <ul class="c-chips c-chips--grid p-store-jump__list" role="list">
+                    <li><x-site.chip href="#map" icon="map-pin">地図・行き方</x-site.chip></li>
+                    <li><x-site.chip href="#hours" icon="clock" tone="yellow">{{ $nowrap(['営業時間・', '定休日']) }}</x-site.chip></li>
+                    <li><x-site.chip href="#service" icon="wrench" tone="black">{{ $nowrap(['当店で', 'できること']) }}</x-site.chip></li>
+                    <li><x-site.chip href="#faq" icon="info">よくある質問</x-site.chip></li>
+                </ul>
+            </nav>
         </div>
     </div>
-</div>
+</section>
 
-{{-- ============================================================
-     メインコンテンツ
-     ============================================================ --}}
-<div class="container store-main-wrap">
+{{-- 3. 地図とアクセス：道順の大ボタン → 地図 → お車で・電車で・バスで → 駅までの送迎 --}}
+<section class="l-section l-section--soft" id="map" aria-labelledby="store-map-title">
+    <div class="l-container">
+        <x-site.section-head id="store-map-title" title="地図とアクセス" en="ACCESS"
+            lead="［地図アプリで道順を見る］を押すと、今いる場所からお店までの道順を地図アプリで確かめられます。" />
 
-    {{-- ① 店舗概要 + 営業時間 --}}
-    <div class="store-section-grid">
+        <div class="p-store-map">
+            <div class="p-store-map__bar">
+                <p class="p-store-map__addr">
+                    <span class="p-store-map__pin" aria-hidden="true"><x-site.icon name="map-pin" /></span>
+                    <span class="p-store-map__addr-text"><span class="p-store-map__addr-label">住所</span><x-site.address postal /></span>
+                </p>
+                <x-site.btn2 :href="$directionsUrl" size="xl" icon="route" class="p-store-map__btn" target="_blank" rel="noopener"
+                             bubble="Googleマップが開きます" small="今いる場所からお店まで" :big="$nowrap(['地図アプリで', '道順を見る'])"
+                             aria-label="地図アプリで道順を見る（新しいタブで開きます）" />
+            </div>
+            <div class="p-store-map__body">
+                <p class="p-store-map__fallback">地図を読み込んでいます。表示されない場合は、上の［地図アプリで道順を見る］をお使いください。</p>
+                <iframe class="p-store-map__frame" src="{{ $mapEmbedUrl }}"
+                        title="{{ $shopName }}の地図（Googleマップ）"
+                        loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
 
-        {{-- 店舗基本情報 --}}
-        <section class="store-card">
-            <h2 class="store-card-title">
-                <span class="store-card-title-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                </span>
-                店舗基本情報
-            </h2>
-            <table class="store-info-table">
-                <tr>
-                    <th>店舗名</th>
-                    <td><strong>{{ config('app.name') }}</strong></td>
-                </tr>
-                <tr>
-                    <th>住所</th>
-                    <td>
-                        〒661-0975<br>
-                        兵庫県尼崎市下坂部4丁目5-1<br>
-                        <a href="#map" class="store-map-link">地図で確認する ↓</a>
-                    </td>
-                </tr>
-                <tr>
-                    <th>電話番号</th>
-                    <td>
-                        <a href="tel:06-4960-8765" class="store-tel-link">06-4960-8765</a>
-                        <span class="store-info-note">（木曜・第3日曜日を除く 11:00〜21:00）</span>
-                    </td>
-                </tr>
-                <tr>
-                    <th>メール</th>
-                    <td><a href="{{ route('contact.index') }}" class="store-link">お問い合わせフォームへ →</a></td>
-                </tr>
-                <tr>
-                    <th>古物商許可</th>
-                    <td>兵庫県公安委員会許可</td>
-                </tr>
-                <tr>
-                    <th>駐車場</th>
-                    <td>あり（無料）</td>
-                </tr>
-            </table>
-        </section>
+        <h3 class="c-subhead p-store-ways-title">お車・電車・バスでの行き方</h3>
+        <ul class="p-store-ways" role="list">
+            <li class="p-store-way p-store-way--car">
+                <h4 class="p-store-way__title"><span class="p-store-way__ic" aria-hidden="true"><x-site.icon name="car" /></span>お車で</h4>
+                <div class="p-store-way__body">
+                    <p class="p-store-way__key">
+                        <span class="p-store-way__from">{{ $nowrap(['阪神高速11号池田線', '「尼崎東」出口から']) }}</span>
+                        <span class="p-store-way__time"><span class="p-store-way__mode">お車で</span>約<b>5</b>分</span>
+                    </p>
+                    <ul class="p-store-way__list" role="list">
+                        <li>国道2号線から下坂部方面へお越しください。</li>
+                    </ul>
+                    <p class="p-store-way__tag"><x-site.icon name="parking" />{{ $parking }}</p>
+                </div>
+            </li>
+            <li class="p-store-way p-store-way--train">
+                <h4 class="p-store-way__title"><span class="p-store-way__ic" aria-hidden="true"><x-site.icon name="train" /></span>電車で</h4>
+                <div class="p-store-way__body">
+                    <p class="p-store-way__key">
+                        <span class="p-store-way__from">JR尼崎駅から</span>
+                        <span class="p-store-way__time"><span class="p-store-way__mode">タクシーで</span>約<b>10</b>分</span>
+                    </p>
+                    <p class="p-store-way__key">
+                        <span class="p-store-way__from">阪神尼崎駅から</span>
+                        <span class="p-store-way__time"><span class="p-store-way__mode">タクシーで</span>約<b>12</b>分</span>
+                    </p>
+                    <ul class="p-store-way__list" role="list">
+                        <li>駅までのお迎えもできます（下の「駅までの送迎」をご覧ください）。</li>
+                    </ul>
+                </div>
+            </li>
+            <li class="p-store-way p-store-way--bus">
+                <h4 class="p-store-way__title"><span class="p-store-way__ic" aria-hidden="true"><x-site.icon name="bus" /></span>バスで</h4>
+                <div class="p-store-way__body">
+                    <p class="p-store-way__key">
+                        <span class="p-store-way__from">{{ $nowrap(['阪神バス', '「下坂部」停留所から']) }}</span>
+                        <span class="p-store-way__time"><span class="p-store-way__mode">歩いて</span>約<b>3</b>分</span>
+                    </p>
+                    <ul class="p-store-way__list" role="list">
+                        <li>阪神尼崎駅の北口から、阪神バスをご利用ください。</li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
 
-        {{-- 営業時間 --}}
-        <section class="store-card">
-            <h2 class="store-card-title">
-                <span class="store-card-title-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </span>
-                営業時間
-            </h2>
-            <div class="store-hours-calendar">
-                @php
-                    $todayDow = \Carbon\Carbon::now()->dayOfWeek; // 0=Sun,1=Mon...
-                    $days = [
-                        ['label'=>'月','dow'=>1,'hours'=>'11:00〜21:00','open'=>true],
-                        ['label'=>'火','dow'=>2,'hours'=>'11:00〜21:00','open'=>true],
-                        ['label'=>'水','dow'=>3,'hours'=>'11:00〜21:00','open'=>true],
-                        ['label'=>'木','dow'=>4,'hours'=>'定休日','open'=>false],
-                        ['label'=>'金','dow'=>5,'hours'=>'11:00〜21:00','open'=>true],
-                        ['label'=>'土','dow'=>6,'hours'=>'11:00〜21:00','open'=>true],
-                        ['label'=>'日','dow'=>0,'hours'=>'11:00〜21:00','open'=>true],
-                    ];
-                @endphp
-                <div class="hours-week">
-                    @foreach($days as $day)
-                        <div class="hours-day {{ !$day['open'] ? 'hours-day-closed' : '' }} {{ $todayDow === $day['dow'] ? 'hours-day-today' : '' }}">
-                            <span class="hours-day-label">{{ $day['label'] }}</span>
-                            @if($todayDow === $day['dow'])
-                                <span class="hours-today-badge">今日</span>
-                            @endif
-                            <span class="hours-time {{ !$day['open'] ? 'hours-time-closed' : '' }}">{{ $day['hours'] }}</span>
-                        </div>
+        <div class="p-store-pickup">
+            <div class="p-store-pickup__art" aria-hidden="true"><x-site.illust name="f-store" /></div>
+            <div class="p-store-pickup__body">
+                <p class="c-slant c-slant--yellow p-store-pickup__kicker">電車でお越しの方へ</p>
+                <h4 class="p-store-pickup__title">駅までの送迎</h4>
+                <p class="p-store-pickup__text">事前にご連絡いただければ、駅までお迎えに参ります。ご希望の方は、ご来店の前にお電話でお知らせください。</p>
+            </div>
+            <x-site.btn2 :href="$telHref" variant="black" icon="phone" num block class="p-store-pickup__btn"
+                         small="送迎のお申し込みはお電話で" :big="$tel" :aria-label="'電話をかける '.$tel" />
+        </div>
+    </div>
+</section>
+
+{{-- 4. 営業時間・定休日：黒い案内板（営業時間・定休日の決まり・次の第3日曜）→ 曜日ごとの表＋営業日カレンダー --}}
+<section class="l-section" id="hours" aria-labelledby="store-hours-title">
+    <div class="l-container">
+        <x-site.section-head id="store-hours-title" title="営業時間・定休日" en="OPEN HOURS" :lead="'定休日は'.$closedLabel.'です。土曜・日曜・祝日も営業しています。'" />
+
+        <div class="p-store-board">
+            <div class="p-store-board__item">
+                <p class="c-slant c-slant--yellow p-store-board__label"><x-site.icon name="clock" />営業時間</p>
+                @if (filled($hours['open'] ?? null) && filled($hours['close'] ?? null))
+                    <p class="p-store-board__time"><span class="u-num">{{ $hours['open'] }}</span><span class="p-store-board__tilde">〜</span><span class="u-num">{{ $hours['close'] }}</span></p>
+                @else
+                    <p class="p-store-board__time">{{ $hoursLabel }}</p>
+                @endif
+                <x-site.open-status variant="badge" />
+            </div>
+            @if ($closedRules !== [])
+                <div class="p-store-board__item">
+                    <p class="c-slant c-slant--yellow p-store-board__label"><x-site.icon name="calendar" />定休日</p>
+                    <ul class="p-store-board__rules" role="list">
+                        @foreach ($closedRules as $rule)
+                            <li class="p-store-board__rule">
+                                <span class="p-store-board__rule-ic" aria-hidden="true"><x-site.icon name="close" /></span>
+                                <span><span class="p-store-board__cycle">{{ $rule['cycle'] }}</span>{{ $rule['day'] }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            @if ($nextNthDates !== [])
+                @php $nextNth = $nextNthDates[0]; @endphp
+                <div class="p-store-board__item">
+                    <p class="c-slant c-slant--yellow p-store-board__label"><x-site.icon name="cal-check" />次の{{ $nthLabel }}（定休日）</p>
+                    <p class="p-store-board__date">
+                        <b class="u-num">{{ $nextNth->month }}</b>月<b class="u-num">{{ $nextNth->day }}</b>日<span class="p-store-board__wd">（{{ $weekdayShort[$nextNth->dayOfWeek] }}）</span>
+                    </p>
+                    @if (count($nextNthDates) > 1)
+                        <p class="p-store-board__after">そのあとは {{ collect(array_slice($nextNthDates, 1))->map(fn ($date) => BusinessHours::dateLabel($date))->implode('・') }}</p>
+                    @endif
+                </div>
+            @endif
+        </div>
+
+        @if ($holidays !== [])
+            <div class="c-alert c-alert--warn p-store-holidays">
+                <x-site.icon name="alert" />
+                <div class="c-alert__body">
+                    <p class="c-alert__title">臨時休業のお知らせ</p>
+                    @foreach ($holidays as $holiday)
+                        <p>{{ $holiday['label'].($holiday['reason'] !== '' ? '（'.$holiday['reason'].'）' : '') }}は休業します。</p>
                     @endforeach
                 </div>
-                <div class="store-hours-note">
-                    <div class="store-hours-note-item">
-                        <span>📌</span><span>祝日・年末年始・GW等は営業時間が変わる場合があります</span>
-                    </div>
-                    <div class="store-hours-note-item">
-                        <span>📌</span><span>試乗・商談は予約なしでもご来店いただけます</span>
-                    </div>
-                    <div class="store-hours-note-item">
-                        <span>📌</span><span>お電話・フォームにて時間外のご相談も受け付けます</span>
+            </div>
+        @endif
+
+        <div class="p-store-hours">
+            <div class="p-store-hours__week">
+                <h3 class="c-subhead">曜日ごとの営業時間</h3>
+                <x-site.business-hours :notes="false" />
+            </div>
+
+            <div class="p-store-cal" x-data="{ tab: 0 }">
+                <div class="p-store-cal__head">
+                    <h3 class="c-subhead p-store-cal__title">営業日カレンダー</h3>
+                    <div class="c-tabs p-store-cal__tabs" role="tablist" aria-label="表示する月">
+                        @foreach ($calendars as $i => $calendar)
+                            <button type="button" class="c-tabs__tab" role="tab" id="store-cal-tab-{{ $i }}" aria-controls="store-cal-{{ $i }}" x-ref="calTab{{ $i }}"
+                                    aria-selected="{{ $i === 0 ? 'true' : 'false' }}" x-bind:aria-selected="tab === {{ $i }} ? 'true' : 'false'"
+                                    tabindex="{{ $i === 0 ? '0' : '-1' }}" x-bind:tabindex="tab === {{ $i }} ? 0 : -1"
+                                    x-on:click="tab = {{ $i }}"
+                                    x-on:keydown.right.prevent="tab = (tab + 1) % {{ count($calendars) }}; $nextTick(() => $refs['calTab' + tab].focus())"
+                                    x-on:keydown.left.prevent="tab = (tab + {{ count($calendars) - 1 }}) % {{ count($calendars) }}; $nextTick(() => $refs['calTab' + tab].focus())">{{ $calendar['tab'] }}</button>
+                        @endforeach
                     </div>
                 </div>
+
+                @foreach ($calendars as $i => $calendar)
+                    <div class="p-store-cal__panel" role="tabpanel" id="store-cal-{{ $i }}" aria-labelledby="store-cal-tab-{{ $i }}"
+                         x-show="tab === {{ $i }}" @if ($i > 0) x-cloak @endif>
+                        <table class="p-store-cal__table">
+                            <caption class="u-visually-hidden">{{ $calendar['caption'] }}</caption>
+                            <thead>
+                                <tr>
+                                    @foreach ($weekdayShort as $w => $name)
+                                        <th scope="col" class="p-store-cal__wd p-store-cal__wd--{{ $w }}"><abbr class="p-store-cal__abbr" title="{{ $name }}曜日">{{ $name }}</abbr></th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($calendar['weeks'] as $week)
+                                    <tr>
+                                        @foreach ($week as $cell)
+                                            @if ($cell === null)
+                                                <td class="p-store-cal__cell is-empty"></td>
+                                            @else
+                                                <td class="p-store-cal__cell{{ $cell['reason'] !== null ? ' is-closed' : '' }}{{ $cell['today'] ? ' is-today' : '' }}{{ $cell['past'] ? ' is-past' : '' }}"@if ($cell['today']) aria-current="date"@endif>
+                                                    <span class="p-store-cal__num">{{ $cell['day'] }}</span>
+                                                    @if ($cell['reason'] !== null)
+                                                        <span class="p-store-cal__mark"><x-site.icon name="close" />{{ $cell['reason'] === 'holiday' ? '休業' : '定休' }}</span>
+                                                    @elseif ($cell['today'])
+                                                        <span class="p-store-cal__mark p-store-cal__mark--today">今日</span>
+                                                    @endif
+                                                </td>
+                                            @endif
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endforeach
+
+                <ul class="p-store-cal__legend" role="list">
+                    <li class="p-store-cal__key"><span class="p-store-cal__swatch p-store-cal__swatch--closed" aria-hidden="true"><x-site.icon name="close" /></span>定休日</li>
+                    <li class="p-store-cal__key"><span class="p-store-cal__swatch p-store-cal__swatch--today" aria-hidden="true"></span>今日</li>
+                    <li class="p-store-cal__key"><span class="p-store-cal__swatch" aria-hidden="true"></span><span>営業日（<span class="u-nowrap">{{ $hoursLabel }}</span>）</span></li>
+                </ul>
             </div>
-        </section>
+        </div>
     </div>
+</section>
 
-    {{-- ② アクセスマップ --}}
-    <section class="store-card" id="map">
-        <h2 class="store-card-title">
-            <span class="store-card-title-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </span>
-            アクセスマップ
-        </h2>
-        <div class="store-map-wrap">
-            <iframe
-                src="https://maps.google.com/maps?q=兵庫県尼崎市下坂部4丁目5-1&output=embed&z=16&hl=ja"
-                width="100%" height="420"
-                style="border:0;display:block;"
-                allowfullscreen loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-        </div>
-        <div class="store-map-actions">
-            <a href="https://maps.google.com/?q=兵庫県尼崎市下坂部4丁目5-1" target="_blank" rel="noopener noreferrer" class="store-map-btn store-map-btn-google">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                Google マップで開く
-            </a>
-            <a href="https://maps.apple.com/?q=兵庫県尼崎市下坂部4丁目5-1" target="_blank" rel="noopener noreferrer" class="store-map-btn store-map-btn-apple">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-                Apple マップで開く
-            </a>
-        </div>
-    </section>
-
-    {{-- ③ アクセス方法 --}}
-    <section class="store-card">
-        <h2 class="store-card-title">
-            <span class="store-card-title-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-            </span>
-            アクセス方法
-        </h2>
-        <div class="store-access-grid">
-            <div class="store-access-item">
-                <div class="store-access-icon store-access-car">🚗</div>
-                <div class="store-access-body">
-                    <h3 class="store-access-title">お車でお越しの方</h3>
-                    <p class="store-access-text">
-                        阪神高速11号池田線「尼崎東」出口より車で約5分。<br>
-                        国道2号線から下坂部方面へお越しください。<br>
-                        <strong>駐車場：無料完備</strong>
-                    </p>
-                </div>
-            </div>
-            <div class="store-access-item">
-                <div class="store-access-icon store-access-train">🚉</div>
-                <div class="store-access-body">
-                    <h3 class="store-access-title">電車でお越しの方</h3>
-                    <p class="store-access-text">
-                        JR東西線「尼崎」駅よりタクシーで約10分<br>
-                        阪神本線「尼崎」駅よりタクシーで約12分<br>
-                        <strong>送迎サービス：事前にご連絡いただければ駅までお迎えに参ります</strong>
-                    </p>
-                </div>
-            </div>
-            <div class="store-access-item">
-                <div class="store-access-icon store-access-bus">🚌</div>
-                <div class="store-access-body">
-                    <h3 class="store-access-title">バスでお越しの方</h3>
-                    <p class="store-access-text">
-                        阪神バス「下坂部」停留所より徒歩約3分<br>
-                        阪神「尼崎」駅北口より阪神バスご利用ください
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {{-- ④ スタッフ紹介 --}}
-    <section class="store-card">
-        <h2 class="store-card-title">
-            <span class="store-card-title-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
-            </span>
-            スタッフ紹介
-        </h2>
-        <div class="store-staff-grid">
-            <div class="store-staff-card store-staff-card--manager">
-                <div class="store-staff-avatar store-staff-avatar--manager"><span class="store-staff-avatar-icon">👨‍💼</span></div>
-                <div class="store-staff-info">
-                    <p class="store-staff-role">店長</p>
-                    <p class="store-staff-name">麻田 太郎</p>
-                    <p class="store-staff-message">「お客様一人ひとりに合った最高の一台をご提案します。気になることは何でもお気軽にご相談ください！」</p>
-                    <div class="store-staff-tags">
-                        <span class="store-staff-tag">国産車専門</span>
-                        <span class="store-staff-tag">査定歴15年</span>
-                        <span class="store-staff-tag">ファミリーカー得意</span>
-                    </div>
-                </div>
-            </div>
-            <div class="store-staff-card store-staff-card--sub">
-                <div class="store-staff-avatar store-staff-avatar--sub"><span class="store-staff-avatar-icon">👩‍💼</span></div>
-                <div class="store-staff-info">
-                    <p class="store-staff-role">副店長</p>
-                    <p class="store-staff-name">山田 花子</p>
-                    <p class="store-staff-message">「女性スタッフとして、はじめて車を購入される方も安心してご相談いただける環境づくりを大切にしています。」</p>
-                    <div class="store-staff-tags">
-                        <span class="store-staff-tag">軽自動車専門</span>
-                        <span class="store-staff-tag">ローン相談</span>
-                        <span class="store-staff-tag">初めての方歓迎</span>
-                    </div>
-                </div>
-            </div>
-            <div class="store-staff-card store-staff-card--mechanic">
-                <div class="store-staff-avatar store-staff-avatar--mechanic"><span class="store-staff-avatar-icon">🧑‍🔧</span></div>
-                <div class="store-staff-info">
-                    <p class="store-staff-role">整備士</p>
-                    <p class="store-staff-name">佐藤 健一</p>
-                    <p class="store-staff-message">「全車両を隅々まで点検し、安心してお乗りいただける状態でご納車します。整備のことなら何でも聞いてください。」</p>
-                    <div class="store-staff-tags">
-                        <span class="store-staff-tag">二級整備士</span>
-                        <span class="store-staff-tag">整備歴20年</span>
-                        <span class="store-staff-tag">車検・修理</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {{-- ⑤ 選ばれる理由 --}}
-    <section class="store-card store-card-light">
-        <h2 class="store-card-title">
-            <span class="store-card-title-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-            </span>
-            {{ config('app.name') }}が選ばれる理由
-        </h2>
-        <div class="store-appeal-grid">
-            <div class="store-appeal-item">
-                <div class="store-appeal-num">01</div>
-                <div class="store-appeal-icon">🔍</div>
-                <h3 class="store-appeal-title">第三者機関による車両検査</h3>
-                <p class="store-appeal-body">全在庫車両を第三者検査機関による厳格な検査を実施。修復歴・走行距離・内外装の状態を透明に公開しています。</p>
-            </div>
-            <div class="store-appeal-item">
-                <div class="store-appeal-num">02</div>
-                <div class="store-appeal-icon">💰</div>
-                <h3 class="store-appeal-title">総額表示で安心のお買い物</h3>
-                <p class="store-appeal-body">諸費用・税金・保険を含んだ「総額表示」を徹底。後から追加費用が発生しない、明瞭会計でご安心いただけます。</p>
-            </div>
-            <div class="store-appeal-item">
-                <div class="store-appeal-num">03</div>
-                <div class="store-appeal-icon">🛡️</div>
-                <h3 class="store-appeal-title">充実の保証制度</h3>
-                <p class="store-appeal-body">納車後3ヶ月・走行5,000kmの無料保証が標準付帯。有料延長保証（最大3年）もご用意しています。</p>
-            </div>
-            <div class="store-appeal-item">
-                <div class="store-appeal-num">04</div>
-                <div class="store-appeal-icon">🏦</div>
-                <h3 class="store-appeal-title">豊富なローン・支払い方法</h3>
-                <p class="store-appeal-body">複数の提携ローン会社で低金利プランをご用意。頭金0円・最長84回払いにも対応。審査は最短即日回答。</p>
-            </div>
-            <div class="store-appeal-item">
-                <div class="store-appeal-num">05</div>
-                <div class="store-appeal-icon">🔧</div>
-                <h3 class="store-appeal-title">自社整備工場完備</h3>
-                <p class="store-appeal-body">自社工場で整備・車検・板金まで一括対応。購入後のアフターフォローも安心してお任せください。</p>
-            </div>
-            <div class="store-appeal-item">
-                <div class="store-appeal-num">06</div>
-                <div class="store-appeal-icon">🚙</div>
-                <h3 class="store-appeal-title">下取り・強化買取</h3>
-                <p class="store-appeal-body">乗り換え時の下取りから単純買取まで、他社より高く買い取れる理由をご説明します。まずはご相談を。</p>
-            </div>
-        </div>
-    </section>
-
-    {{-- ⑥ よくある質問 --}}
-    <section class="store-card">
-        <h2 class="store-card-title">
-            <span class="store-card-title-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </span>
-            よくあるご質問
-        </h2>
-        <div class="store-faq-list">
-            @php
-            $faqs = [
-                ['q'=>'試乗はできますか？', 'a'=>'はい、在庫車両のほとんどで試乗可能です。お気軽にスタッフまでお申し付けください。運転免許証をお持ちいただければすぐにご対応します。'],
-                ['q'=>'県外への納車はできますか？', 'a'=>'全国どこでも納車対応しております。陸送費は距離によって異なりますが、詳しくはお問い合わせください。'],
-                ['q'=>'ローンの審査は難しいですか？', 'a'=>'複数の提携ローン会社と提携しており、他社で断られた方でもご相談いただける場合があります。まずはお気軽にご相談ください。'],
-                ['q'=>'車の下取りはできますか？', 'a'=>'はい、メーカー・年式・走行距離を問わず、どのようなお車でも査定いたします。他社の見積もりがある場合はぜひご提示ください。'],
-                ['q'=>'購入後のメンテナンスはお願いできますか？', 'a'=>'もちろんです。自社整備工場にて車検・点検・修理・板金塗装まで幅広く承っております。購入後も長くお付き合いいただけます。'],
-                ['q'=>'土日・祝日も営業していますか？', 'a'=>'土曜日・日曜日・祝日も営業しております（11:00〜21:00）。木曜日および第3日曜日が定休日となっております。'],
-            ];
-            @endphp
-            @foreach($faqs as $i => $faq)
-            <div class="store-faq-item" x-data="{ open: false }">
-                <button class="store-faq-q" @click="open = !open" :class="{ 'store-faq-q-open': open }">
-                    <span class="store-faq-icon">Q</span>
-                    <span>{{ $faq['q'] }}</span>
-                    <svg class="store-faq-arrow" :class="{ 'store-faq-arrow-open': open }"
-                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div class="store-faq-a" x-show="open" x-transition style="display:none;">
-                    <span class="store-faq-a-icon">A</span>
-                    <p>{{ $faq['a'] }}</p>
-                </div>
-            </div>
+{{-- 5. 当店でできること（看板の6業務）：黒の斜線地にアイコンのタイル --}}
+<section class="l-section l-section--dark" id="service" aria-labelledby="store-service-title">
+    <div class="l-container">
+        <x-site.band-title id="store-service-title" title="当店でできること" en="SERVICE"
+            lead="看板にある業務です。お車のことは、まとめてご相談ください。" />
+        <ul class="p-store-services" role="list">
+            @foreach ($services as $service)
+                <li>
+                    <a class="p-store-service" href="{{ $service['href'] }}">
+                        <span class="p-store-service__no" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                        <span class="p-store-service__ic p-store-service__ic--{{ $service['tone'] }}" aria-hidden="true"><x-site.icon :name="$service['icon']" /></span>
+                        <span class="p-store-service__name">{{ $service['name'] }}</span>
+                        <span class="p-store-service__text">{{ $service['text'] }}</span>
+                        @if (($service['count'] ?? 0) > 0)
+                            <span class="p-store-service__count">いま<b class="u-num">{{ $service['count'] }}</b>台を掲載中</span>
+                        @endif
+                        <span class="p-store-service__more">{{ $service['more'] }}<x-site.icon name="chevron-right" /></span>
+                    </a>
+                </li>
             @endforeach
-        </div>
-    </section>
+        </ul>
+    </div>
+</section>
 
-    {{-- ⑦ お問い合わせCTA --}}
-    <section class="store-cta">
-        <div class="store-cta-inner">
-            <div class="store-cta-text">
-                <h2 class="store-cta-title">気になることはお気軽にご相談ください</h2>
-                <p class="store-cta-sub">電話・フォームどちらでもご対応しております。お見積もり・在庫確認・試乗予約もお気軽に。</p>
+{{-- 6. 会社概要（config が null の行は出さない）＋はじめての方への案内 --}}
+<section class="l-section l-section--soft" id="company" aria-labelledby="store-company-title">
+    <div class="l-container">
+        <x-site.section-head id="store-company-title" title="会社概要" en="COMPANY" />
+
+        <div class="p-store-company">
+            <div class="c-table-wrap p-store-company__table">
+                <table class="c-table">
+                    <caption class="u-visually-hidden">{{ $shopName }}の会社概要</caption>
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="c-table__th">店名</th>
+                            <td class="c-table__td p-store-company__name">{{ $shopName }}</td>
+                        </tr>
+                        @if (filled($operator['company'] ?? null))
+                            <tr>
+                                <th scope="row" class="c-table__th">運営会社</th>
+                                <td class="c-table__td">{{ $operator['company'] }}</td>
+                            </tr>
+                        @endif
+                        @if (filled($representative))
+                            <tr>
+                                <th scope="row" class="c-table__th">代表者</th>
+                                <td class="c-table__td">{{ $representative }}</td>
+                            </tr>
+                        @endif
+                        <tr>
+                            <th scope="row" class="c-table__th">所在地</th>
+                            <td class="c-table__td"><x-site.address postal /></td>
+                        </tr>
+                        <tr class="p-store-company__tel-row">
+                            <th scope="row" class="c-table__th">電話番号</th>
+                            <td class="c-table__td"><a class="c-link c-link--block p-store-company__tel" href="{{ $telHref }}" aria-label="電話をかける {{ $tel }}">{{ $tel }}</a></td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="c-table__th">営業時間</th>
+                            <td class="c-table__td">{{ $hoursLabel }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="c-table__th">定休日</th>
+                            <td class="c-table__td">{{ $closedLabel }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="c-table__th">事業内容</th>
+                            <td class="c-table__td">{{ $businessLinesText }}</td>
+                        </tr>
+                        @if ($kobutsuText !== null)
+                            <tr>
+                                <th scope="row" class="c-table__th">古物商許可</th>
+                                <td class="c-table__td">{{ $kobutsuText }}</td>
+                            </tr>
+                        @endif
+                        <tr>
+                            <th scope="row" class="c-table__th">駐車場</th>
+                            <td class="c-table__td">{{ $parking }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="store-cta-btns">
-                <a href="tel:06-4960-8765" class="store-cta-tel-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.1 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-                    </svg>
-                    <span>
-                        06-4960-8765
-                        <small>受付時間 11:00〜21:00（木曜・第3日曜除く）</small>
-                    </span>
-                </a>
-                <a href="{{ route('contact.index') }}" class="btn-primary" style="gap:8px;">
-                    メールでお問い合わせ
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
+
+            <div class="c-card c-card--accent p-store-company__side">
+                <h3 class="c-card__title p-store-company__side-title">はじめての方へ</h3>
+                <p class="p-store-company__side-lead">当店が車の表示で守っていることと、ご購入までの流れをトップページでご案内しています。</p>
+                <ul class="p-store-company__links" role="list">
+                    <li><x-site.link-card :href="route('home').'#promise'" icon="tag" :title="new HtmlString('当店の<b>お約束</b>')" sub="支払総額・修復歴などの表示" /></li>
+                    <li><x-site.link-card :href="route('home').'#flow'" icon="car" tone="black" :title="new HtmlString('ご購入の<b>流れ</b>')" sub="お問い合わせから納車まで" /></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- 7. よくある質問（店舗について4問）＋ご来店の前に --}}
+<section class="l-section" id="faq" aria-labelledby="store-faq-title">
+    <div class="l-container">
+        <x-site.section-head id="store-faq-title" title="店舗についてのよくある質問" en="FAQ" />
+
+        <div class="p-store-faq">
+            <div class="p-store-faq__main">
+                <x-site.faq :items="$faqItems" jsonld />
+                <a class="c-more p-store-faq__more" href="{{ route('home') }}#faq">ご購入についての質問（トップページ）<x-site.icon name="chevron-right" /></a>
+            </div>
+
+            <div class="c-card c-card--warm p-store-before">
+                <h3 class="c-card__title p-store-before__title"><x-site.icon name="info" />ご来店の前に</h3>
+                <ul class="p-store-before__list" role="list">
+                    <li class="p-store-before__item"><x-site.icon name="check" /><span>土曜・日曜・祝日も営業しています<span class="u-nowrap">（定休日は{{ $closedLabel }}）。</span></span></li>
+                    <li class="p-store-before__item"><x-site.icon name="check" /><span>年末年始・ゴールデンウィークなどは、営業時間が変わる場合があります。臨時休業は、このページで<span class="u-nowrap">お知らせします。</span></span></li>
+                    <li class="p-store-before__item"><x-site.icon name="check" /><span>見たい車が決まっている場合は、展示場所をご来店の前に<span class="u-nowrap">ご確認ください。</span></span></li>
+                    <li class="p-store-before__item"><x-site.icon name="check" /><span>営業時間外のご連絡は、お問い合わせフォーム<span class="u-nowrap">（24時間受付）</span>を<span class="u-nowrap">ご利用ください。</span></span></li>
+                </ul>
+                <a class="c-btn c-btn--primary c-btn--block p-store-before__btn" href="{{ route('contact.index', ['purpose' => 'visit']) }}">
+                    <x-site.icon name="calendar" />フォームで来店を予約する
                 </a>
             </div>
         </div>
-    </section>
-
-</div>{{-- /container --}}
-
+    </div>
+</section>
 @endsection

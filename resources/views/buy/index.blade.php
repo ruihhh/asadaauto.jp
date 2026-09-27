@@ -1,825 +1,767 @@
 @extends('layouts.site')
 
-@section('title', '無料買取査定｜尼崎・兵庫県の中古車買取')
-@section('meta_description', '尼崎・兵庫の中古車買取査定ならアサダオートサポート。査定料0円・しつこい営業なし・契約後の減額なし。最短即日回答。3分で簡単お申し込み。')
-@section('og_title', '無料買取査定 | ' . config('app.name'))
-@section('og_description', '査定料0円・しつこい営業なし・最短即日回答の中古車買取。兵庫県尼崎市のアサダオートサポート。')
-@section('canonical', route('buy.index'))
+@php
+    $shopName = config('shop.name');
+    $shopArea = config('shop.pref').config('shop.area'); // 兵庫県尼崎市下坂部
+    $tel = config('shop.tel');
+    $telHref = config('shop.tel_href');
+    $hoursLabel = \App\Support\BusinessHours::hoursLabel();
+    $closedLabel = (string) config('shop.closed_label');
+    $buyConfig = (array) config('shop.buy', []);
+    $kobutsu = (array) config('shop.kobutsu', []);
+    $paymentTiming = $buyConfig['payment_timing'] ?? null;
+    $visitArea = $buyConfig['visit_area'] ?? null;
 
-@section('structured_data')
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-        {"@type":"ListItem","position":1,"name":"ホーム","item":"{{ url('/') }}"},
-        {"@type":"ListItem","position":2,"name":"無料買取査定","item":"{{ route('buy.index') }}"}
-    ]
-}
-</script>
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@type": "Service",
-    "name": "中古車買取査定サービス",
-    "provider": {
-        "@type": "AutoDealer",
-        "name": "{{ config('app.name') }}",
-        "url": "{{ url('/') }}"
-    },
-    "description": "中古車の無料買取査定サービス。査定料0円・しつこい営業なし・最短即日回答。",
-    "areaServed": [
-        {"@type":"City","name":"尼崎市"},
-        {"@type":"City","name":"西宮市"},
-        {"@type":"City","name":"伊丹市"},
-        {"@type":"City","name":"宝塚市"},
-        {"@type":"City","name":"神戸市"},
-        {"@type":"City","name":"大阪市"},
-        {"@type":"AdministrativeArea","name":"兵庫県"},
-        {"@type":"AdministrativeArea","name":"大阪府"}
-    ],
-    "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY",
-        "description": "無料査定"
+    // 見出し・ラベルを語の単位でだけ折り返す（狭いスマホで「受け付け／ました」のような改行を防ぐ）
+    $nowrap = fn (array|string $parts) => new \Illuminate\Support\HtmlString(
+        collect((array) $parts)->map(fn ($part) => '<span class="u-nowrap">'.e($part).'</span>')->implode('')
+    );
+    $hoursLine = $nowrap(array_filter(['営業時間 '.$hoursLabel, $closedLabel !== '' ? '（'.$closedLabel.'定休）' : null]));
+
+    // メーカーの候補：主要な国産メーカー＋在庫にあるメーカー＋「輸入車」（重複は除く）
+    $makeOptions = collect(['トヨタ', 'レクサス', '日産', 'ホンダ', 'マツダ', 'スバル', '三菱', 'スズキ', 'ダイハツ'])
+        ->merge($makes ?? [])
+        ->push('輸入車')
+        ->map(fn ($make) => trim((string) $make))
+        ->filter()
+        ->unique()
+        ->values();
+
+    // 年式の選択肢（BuyController の検証と同じ範囲：来年〜1980年）。表示は和暦を併記する
+    $yearOptions = range((int) date('Y') + 1, 1980);
+
+    // フォームの3ステップ。サーバー側の検証エラーのときは、最初にエラーがあるステップを開いて表示する
+    $stepLabels = [1 => ['お車の情報'], 2 => ['ご連絡先'], 3 => ['そのほか', '（任意）']];
+    $stepFields = [
+        1 => ['make', 'model', 'model_year', 'mileage', 'condition'],
+        2 => ['name', 'phone', 'email'],
+        3 => ['grade', 'color', 'zip', 'message'],
+    ];
+    $initialStep = 1;
+    foreach ($stepFields as $number => $fields) {
+        if ($errors->hasAny($fields)) {
+            $initialStep = $number;
+            break;
+        }
     }
-}
-</script>
-@endsection
+
+    // PC のフォームの左に置く「入力するのは、この3つです」（ステップと項目は上の $stepFields と同じ並び）
+    $guide = [
+        ['title' => 'お車の情報', 'optional' => false, 'fields' => [
+            ['icon' => 'car', 'label' => 'メーカー・車種'],
+            ['icon' => 'calendar', 'label' => '年式'],
+            ['icon' => 'meter', 'label' => '走行距離'],
+            ['icon' => 'bankin', 'label' => 'お車の状態'],
+        ]],
+        ['title' => 'ご連絡先', 'optional' => false, 'fields' => [
+            ['icon' => 'user', 'label' => 'お名前'],
+            ['icon' => 'phone', 'label' => '電話番号'],
+            ['icon' => 'mail', 'label' => 'メールアドレス'],
+        ]],
+        ['title' => 'そのほか', 'optional' => true, 'fields' => [
+            ['icon' => null, 'label' => 'グレード'],
+            ['icon' => null, 'label' => 'ボディカラー'],
+            ['icon' => null, 'label' => '郵便番号'],
+            ['icon' => null, 'label' => 'ご要望'],
+        ]],
+    ];
+
+    // お車の状態（3択。色だけでなくアイコンと文字で見分けられるようにする）
+    $conditions = [
+        'good' => ['label' => ['目立つ傷や', 'へこみはない'], 'icon' => 'check'],
+        'normal' => ['label' => ['小さな傷や', 'へこみがある'], 'icon' => 'bankin'],
+        'damaged' => ['label' => ['大きな傷・へこみや', '故障がある'], 'icon' => 'wrench'],
+    ];
+
+    // お約束。「しつこい営業電話はしません」はオーナー未確認のため載せない。
+    // 「契約後の減額なし」は、条件をオーナーが確認して config を true にしたときだけ出す
+    $promises = [
+        ['illust' => 'coins', 'title' => '査定は無料です', 'text' => 'お車の査定に費用はかかりません。お電話やメールでのご相談も無料です。', 'visual' => 'zero'],
+        ['illust' => 'buy', 'title' => ['査定だけでも', '大丈夫です'], 'text' => '査定額をお聞きになってから、売るかどうかをお決めください。', 'visual' => 'choice'],
+    ];
+    if (! empty($buyConfig['no_reduction_after_contract'])) {
+        $promises[] = ['illust' => 'f-contract', 'title' => ['ご契約後の', '減額はしません'], 'text' => 'ご契約のあとで買取価格を下げることはありません。ただし、お聞きした内容と実際のお車が大きく異なる場合は除きます。', 'visual' => null];
+    }
+    $promises[] = ['illust' => 'p-explain', 'title' => ['ご契約の前に、', '手続きをご説明します'], 'text' => 'ご売却の手続きの流れと必要な書類を、ご契約の前にご説明します。わからないことは何でもお聞きください。', 'visual' => 'checks'];
+    $promises[] = ['illust' => 'mail-check', 'title' => ['個人情報は、', '査定の連絡と手続きに', 'だけ使います'], 'text' => 'お預かりした情報は、査定のご連絡と買取の手続きのためにだけ使います。', 'visual' => 'privacy'];
+
+    // こんなお車もご相談ください（イラストは x-site.illust。車検切れは「期限切れ」の札を重ねる）
+    $cases = [
+        ['illust' => 'service', 'title' => '事故車・故障車', 'text' => '事故で修理したお車や、動かないお車もご相談ください。'],
+        ['illust' => 'p-shaken', 'title' => '車検切れ', 'text' => '車検が切れたまま置いてあるお車もご相談ください。', 'stamp' => '期限切れ'],
+        ['illust' => 'meter', 'title' => ['走行距離が多い・', '年式が古い'], 'text' => '10万kmを超えたお車や、年式の古いお車もご相談ください。'],
+        ['illust' => 'loan', 'title' => ['ローンが', '残っている'], 'text' => 'ローンの支払いが残っているお車もご相談ください。車検証の「所有者」の欄をご確認いただくと、お話が早く進みます。'],
+    ];
+
+    // ご売却の流れ（用語：おおよその査定額 → 査定額 → 買取価格）。道路とメダルの5ステップ（x-site.flow）
+    $flow = [
+        ['title' => $nowrap(['査定の', 'お申し込み']), 'text' => new \Illuminate\Support\HtmlString('このページのフォーム<span class="u-nowrap">（約3分）</span>か、お電話でお申し込みください。'), 'illust' => 'f-search'],
+        ['title' => $nowrap(['おおよその', '査定額のご連絡']), 'text' => '担当者から電話またはメールで、おおよその査定額をお伝えします。', 'illust' => 'p-frame'],
+        ['title' => $nowrap(['お車の査定']), 'text' => 'お車を見せていただき、査定額をお伝えします。ご来店のほか、出張査定もご相談ください。'.(filled($visitArea) ? '出張査定の地域：'.$visitArea : ''), 'illust' => 'f-store'],
+        ['title' => $nowrap(['ご契約・', '書類のご準備']), 'text' => '査定額にご納得いただけたら、ご契約です。必要な書類は下の表をご覧ください。', 'illust' => 'f-contract'],
+        ['title' => $nowrap(['お引き渡し・', 'お支払い']), 'text' => 'お車と書類をお預かりし、買取価格をお支払いします。'.(filled($paymentTiming) ? 'お支払いの時期：'.$paymentTiming : ''), 'illust' => 'f-key'],
+    ];
+
+    // ご売却に必要な書類（売る側に車庫証明は要らない）
+    $documents = [
+        ['caption' => '普通車の場合', 'illust' => 'sedan', 'rows' => [
+            ['name' => ['自動車検査証', '（車検証）'], 'note' => 'ふだんは車の中に保管されています。'],
+            ['name' => ['自賠責保険', '証明書'], 'note' => '車検証と一緒に保管されていることが多いです。'],
+            ['name' => ['リサイクル券'], 'note' => '車検証と一緒に保管されていることが多いです。見当たらない場合はご相談ください。'],
+            ['name' => ['自動車税', '（種別割）', '納税証明書'], 'note' => '今年度の分です。見当たらない場合はご相談ください。'],
+            ['name' => ['印鑑登録', '証明書'], 'note' => 'お住まいの市区町村の窓口などで取ります（発行から3か月以内のもの）。'],
+            ['name' => ['実印'], 'note' => '譲渡証明書と委任状に押していただきます。用紙はご契約のときにご案内します。'],
+        ]],
+        ['caption' => '軽自動車の場合', 'illust' => 'kei', 'rows' => [
+            ['name' => ['自動車検査証', '（車検証）'], 'note' => 'ふだんは車の中に保管されています。'],
+            ['name' => ['自賠責保険', '証明書'], 'note' => '車検証と一緒に保管されていることが多いです。'],
+            ['name' => ['リサイクル券'], 'note' => '車検証と一緒に保管されていることが多いです。見当たらない場合はご相談ください。'],
+            ['name' => ['軽自動車税', '（種別割）', '納税証明書'], 'note' => '今年度の分です。見当たらない場合はご相談ください。'],
+            ['name' => ['認印'], 'note' => '申請依頼書に押していただきます。実印でなくても大丈夫です。用紙はご契約のときにご案内します。'],
+        ]],
+    ];
+
+    // よくある質問（画面と FAQPage の構造化データを同じ items から出す）
+    $faqItems = [
+        ['q' => '査定は本当に無料ですか？', 'a' => 'はい、無料です。査定だけで売らなかった場合も、費用はかかりません。'],
+        ['q' => '査定額を聞いてから、断ってもいいですか？', 'a' => 'はい、大丈夫です。査定額をお聞きになってから、売るかどうかをお決めください。'],
+        ['q' => '事故車や動かない車も査定できますか？', 'a' => 'はい、ご相談ください。車検が切れたお車もご相談いただけます。お車の状態によっては買取できない場合もありますので、まずは状態をお聞かせください。'],
+        ['q' => 'ローンが残っている車でも売れますか？', 'a' => 'ご相談ください。車検証の「所有者」の欄がローン会社やディーラーの名義になっている場合は、残りのお支払いを済ませて名義を変える手続きが必要です。残りの金額をお聞きして、進め方をご説明します。'],
+        ['q' => '売却に必要な書類は何ですか？', 'a' => "普通車は、車検証・自賠責保険証明書・リサイクル券・自動車税の納税証明書・印鑑登録証明書・実印です。\n軽自動車は、車検証・自賠責保険証明書・リサイクル券・軽自動車税の納税証明書・認印です。\n査定のお申し込みの段階では、書類は必要ありません。"],
+        ['q' => '出張査定はできますか？', 'a' => 'ご自宅などにうかがって査定する出張査定も、ご相談ください。フォームの「郵便番号」の欄にご記入いただくか、お電話でお知らせください。うかがえる地域と日時をご相談します。'.(filled($visitArea) ? "\n出張査定の地域：".$visitArea : '')],
+    ];
+
+    // 構造化データ（BreadcrumbList・Service）。名前と説明は画面の文面にそろえる
+    $breadcrumbSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'ホーム', 'item' => route('home')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => '買取査定', 'item' => route('buy.index')],
+        ],
+    ];
+    $serviceSchema = array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => 'Service',
+        'name' => '中古車の買取査定',
+        'serviceType' => '中古車買取',
+        'description' => '査定は無料です。査定額を聞いてから、売るかどうかを決められます。フォーム（約3分）またはお電話でお申し込みいただけます。',
+        'url' => route('buy.index'),
+        'provider' => ['@id' => url('/').'#organization'],
+        'areaServed' => filled($visitArea) ? $visitArea : null,
+        'offers' => [
+            '@type' => 'Offer',
+            'price' => '0',
+            'priceCurrency' => 'JPY',
+            'description' => '査定は無料です',
+        ],
+    ], fn ($value) => $value !== null);
+    $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_PRETTY_PRINT;
+@endphp
+
+@section('title', '尼崎の中古車買取・無料査定')
+@section('meta_description', $shopArea.'の中古車販売店'.$shopName.'の買取査定のご案内です。査定は無料で、査定額を聞いてから売るかどうかを決められます。フォーム（約3分）またはお電話でお申し込みください。')
+@section('og_title', '尼崎の中古車買取・無料査定 | '.$shopName)
+@section('og_description', '査定は無料です。査定額を聞いてから、売るかどうかを決められます。'.$shopArea.'の'.$shopName.'。')
+@section('canonical', route('buy.index'))
+@section('body_class', 'p-buy')
+@section('mbar', 'buy')
+@section('contact_band', 'hide')
+
+@push('head')
+    <link rel="preload" as="image" href="{{ asset('images/buy-cta-bg.jpg.webp') }}" type="image/webp">
+@endpush
+
+@push('structured_data')
+    <script type="application/ld+json">{!! json_encode($breadcrumbSchema, $jsonFlags) !!}</script>
+    <script type="application/ld+json">{!! json_encode($serviceSchema, $jsonFlags) !!}</script>
+@endpush
 
 @section('content')
 
-{{-- ============================================================
-     ヒーロー（フォーム組み込み型・2カラム）
-     ============================================================ --}}
-<section class="buy-hero">
-    <div class="container">
-        <div class="buy-hero-inner">
-
-            {{-- 左側：テキスト・信頼訴求 --}}
-            <div class="buy-hero-text">
-                <p class="hero-eyebrow">兵庫県尼崎市 | FREE APPRAISAL</p>
-                <h1 class="buy-hero-title">尼崎の中古車買取<br><span>無料査定受付中</span></h1>
-                <p class="buy-hero-sub">兵庫県・大阪府エリア対応。まずはお気軽にご相談ください</p>
-
-                <div class="buy-hero-trust-grid">
-                    <div class="buy-hero-trust-item">
-                        <span class="buy-hero-trust-check">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>
-                        査定料・手数料<strong>0円</strong>
-                    </div>
-                    <div class="buy-hero-trust-item">
-                        <span class="buy-hero-trust-check">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>
-                        しつこい営業<strong>一切なし</strong>
-                    </div>
-                    <div class="buy-hero-trust-item">
-                        <span class="buy-hero-trust-check">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>
-                        契約後の<strong>減額なし</strong>
-                    </div>
-                    <div class="buy-hero-trust-item">
-                        <span class="buy-hero-trust-check">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>
-                        キャンセル<strong>無料</strong>
-                    </div>
-                </div>
-
-                <a class="buy-hero-phone" href="tel:0649608765">
-                    <span class="buy-hero-phone-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-                    </span>
-                    <span class="buy-hero-phone-body">
-                        <span class="buy-hero-phone-label">電話でのご相談</span>
-                        <span class="buy-hero-phone-num">06-4960-8765</span>
-                        <span class="buy-hero-phone-hours">受付 11:00〜21:00（木曜・第3日曜定休）</span>
-                    </span>
-                </a>
-
-                <div class="buy-hero-nums">
-                    <div class="buy-hero-num-item">
-                        <strong>500<em>台+</em></strong>
-                        <span>累計買取実績</span>
-                    </div>
-                    <div class="buy-hero-num-div"></div>
-                    <div class="buy-hero-num-item">
-                        <strong>97<em>%</em></strong>
-                        <span>査定満足度</span>
-                    </div>
-                    <div class="buy-hero-num-div"></div>
-                    <div class="buy-hero-num-item">
-                        <strong>最短<em>即日</em></strong>
-                        <span>査定対応</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- 右側：ミニフォームカード（2ステップ） --}}
-            <div class="buy-hero-form-wrap">
-                <div class="buy-hero-form-card"
-                     x-data="{
-                         step: 1,
-                         nextStep() {
-                             const step1El = this.$refs.step1;
-                             const inputs = [...step1El.querySelectorAll('input[required], select[required]')];
-                             const firstInvalid = inputs.find(inp => !inp.checkValidity());
-                             if (firstInvalid) { firstInvalid.reportValidity(); }
-                             else { this.step = 2; window.scrollTo({top: this.$el.offsetTop - 80, behavior: 'smooth'}); }
-                         }
-                     }">
-
-                    {{-- カードヘッダー --}}
-                    <div class="buy-mini-header">
-                        <p class="buy-mini-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h3l3 3v5h-3"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                            無料査定のご依頼
-                        </p>
-                        {{-- ステップバー --}}
-                        <div class="buy-mini-steps">
-                            <div class="buy-mini-step" :class="step >= 1 ? 'is-active' : ''">
-                                <span class="buy-mini-step-dot" :class="step > 1 ? 'is-done' : ''">
-                                    <template x-if="step > 1">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>
-                                    </template>
-                                    <template x-if="step <= 1"><span>1</span></template>
-                                </span>
-                                <span class="buy-mini-step-label">お車の情報</span>
-                            </div>
-                            <div class="buy-mini-step-line" :class="step >= 2 ? 'is-done' : ''"></div>
-                            <div class="buy-mini-step" :class="step >= 2 ? 'is-active' : ''">
-                                <span class="buy-mini-step-dot">
-                                    <span>2</span>
-                                </span>
-                                <span class="buy-mini-step-label">お客様情報</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if($errors->any())
-                    <div class="buy-mini-errors">
-                        <p>入力内容をご確認ください</p>
-                        <ul>
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
-
-                    <form action="{{ route('buy.send') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="condition" value="normal">
-
-                        {{-- STEP 1: お車の情報 --}}
-                        <div class="buy-mini-body" x-show="step === 1" x-ref="step1">
-                            <div class="buy-mini-row2">
-                                <div class="buy-mini-field">
-                                    <label>メーカー <span class="required">*</span></label>
-                                    <input type="text" name="make" required placeholder="例：トヨタ"
-                                           value="{{ old('make') }}" list="mini-makes-list"
-                                           class="@error('make') is-error @enderror">
-                                    <datalist id="mini-makes-list">
-                                        @foreach ($makes ?? [] as $make)
-                                            <option value="{{ $make }}">
-                                        @endforeach
-                                        <option value="トヨタ">
-                                        <option value="日産">
-                                        <option value="ホンダ">
-                                        <option value="スズキ">
-                                        <option value="ダイハツ">
-                                        <option value="マツダ">
-                                        <option value="スバル">
-                                        <option value="三菱">
-                                        <option value="レクサス">
-                                    </datalist>
-                                </div>
-                                <div class="buy-mini-field">
-                                    <label>車名 <span class="required">*</span></label>
-                                    <input type="text" name="model" required placeholder="例：プリウス"
-                                           value="{{ old('model') }}"
-                                           class="@error('model') is-error @enderror">
-                                </div>
-                            </div>
-                            <div class="buy-mini-row2">
-                                <div class="buy-mini-field">
-                                    <label>年式 <span class="required">*</span></label>
-                                    <select name="model_year" required class="@error('model_year') is-error @enderror">
-                                        <option value="">選択</option>
-                                        @for ($y = date('Y'); $y >= 1990; $y--)
-                                            <option value="{{ $y }}" @selected(old('model_year') == $y)>{{ $y }}年</option>
-                                        @endfor
-                                    </select>
-                                </div>
-                                <div class="buy-mini-field">
-                                    <label>走行距離(km) <span class="required">*</span></label>
-                                    <input type="number" name="mileage" required placeholder="例：45000"
-                                           min="0" value="{{ old('mileage') }}"
-                                           class="@error('mileage') is-error @enderror">
-                                </div>
-                            </div>
-                            <p class="buy-mini-note">おおよそで結構です。後から変更できます。</p>
-                            <button type="button" class="buy-mini-next-btn" @click="nextStep()">
-                                次へ → お客様情報の入力
-                            </button>
-                        </div>
-
-                        {{-- STEP 2: お客様情報 --}}
-                        <div class="buy-mini-body" x-show="step === 2" style="display:none;">
-                            <button type="button" class="buy-mini-back-btn" @click="step = 1">
-                                ← お車の情報を修正
-                            </button>
-                            <div class="buy-mini-field buy-mini-field--full">
-                                <label>お名前 <span class="required">*</span></label>
-                                <input type="text" name="name" required placeholder="山田 太郎"
-                                       value="{{ old('name') }}"
-                                       class="@error('name') is-error @enderror">
-                            </div>
-                            <div class="buy-mini-field buy-mini-field--full">
-                                <label>電話番号 <span class="required">*</span></label>
-                                <input type="tel" name="phone" required placeholder="090-0000-0000"
-                                       value="{{ old('phone') }}"
-                                       class="@error('phone') is-error @enderror">
-                            </div>
-                            <div class="buy-mini-field buy-mini-field--full">
-                                <label>メールアドレス <span class="required">*</span></label>
-                                <input type="email" name="email" required placeholder="example@mail.com"
-                                       value="{{ old('email') }}"
-                                       class="@error('email') is-error @enderror">
-                            </div>
-                            <button type="submit" class="buy-mini-submit-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-                                無料査定を申し込む
-                            </button>
-                            <p class="buy-mini-submit-note">送信後、担当スタッフよりご連絡いたします</p>
-                        </div>
-                    </form>
-
-                    <div class="buy-mini-footer">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                        入力約3分 ／ 完全無料 ／ しつこい勧誘なし
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</section>
-
-{{-- ============================================================
-     緊急性ストリップ
-     ============================================================ --}}
-<div class="buy-urgency-strip">
-    <div class="container">
-        <div class="buy-urgency-inner">
-            <span class="buy-urgency-icon">⚠</span>
-            <span>クルマの価値は<strong>時間とともに下がります</strong>。早めの査定で少しでも高く売れる可能性が高まります。</span>
-            <a href="#appraisal-form" class="buy-urgency-btn">今すぐ無料査定 →</a>
-        </div>
+<div class="p-buy-crumb">
+    <div class="l-container">
+        <x-site.breadcrumb :items="[['label' => '買取査定']]" />
     </div>
 </div>
 
-{{-- ============================================================
-     3つの強み
-     ============================================================ --}}
-<section class="section section-white">
-    <div class="container">
-        <div class="buy-section-head">
-            <p class="buy-section-eyebrow">OUR STRENGTHS</p>
-            <h2 class="buy-section-title">{{ config('app.name') }}の<em>3つの強み</em></h2>
-            <p class="buy-section-sub">他社と比べてみてください。私たちが選ばれる理由がわかります。</p>
+{{-- 1. ファーストビュー：写真の帯に斜めの見出しと黄の丸バッジ、右（スマホは下）にページで唯一の申し込みフォーム --}}
+<section class="p-buy-hero" aria-labelledby="buy-title">
+    <div class="l-container p-buy-hero__grid">
+        {{-- 写真の帯（飾り）。暗い面を重ね、右寄りに斜めの赤い面と黄の線 --}}
+        <div class="p-buy-hero__band" aria-hidden="true">
+            <picture>
+                <source type="image/webp" srcset="{{ asset('images/buy-cta-bg.jpg.webp') }}">
+                <img class="p-buy-hero__img" src="{{ asset('images/buy-cta-bg.jpg') }}" alt="" width="1400" height="360" fetchpriority="high">
+            </picture>
+            <span class="p-buy-hero__slash"></span>
+            <span class="p-buy-hero__line"></span>
         </div>
-        <div class="buy-strengths">
-            <div class="buy-strength-card">
-                <div class="buy-strength-num">01</div>
-                <div class="buy-strength-icon-wrap buy-strength-icon-wrap--gold">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                </div>
-                <div class="buy-strength-body">
-                    <h3>他社より高い査定額</h3>
-                    <p>独自の販売ネットワークを活かし、他社より高い査定額をご提示。「他社で断られた」「もっと高く売りたい」という方もぜひご相談ください。愛車の価値を最大限に引き出します。</p>
-                </div>
-            </div>
-            <div class="buy-strength-card">
-                <div class="buy-strength-num">02</div>
-                <div class="buy-strength-icon-wrap buy-strength-icon-wrap--blue">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-                <div class="buy-strength-body">
-                    <h3>最短即日のスピード対応</h3>
-                    <p>ご依頼から最短即日でご連絡。出張査定にも対応しており、お客様のご都合に合わせてスピーディに対応します。忙しい方でも安心してご利用いただけます。</p>
-                </div>
-            </div>
-            <div class="buy-strength-card">
-                <div class="buy-strength-num">03</div>
-                <div class="buy-strength-icon-wrap buy-strength-icon-wrap--green">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
-                </div>
-                <div class="buy-strength-body">
-                    <h3>安心・丁寧なサポート</h3>
-                    <p>面倒な書類手続きもスタッフが丁寧にサポート。売却後のアフターフォローも万全。初めて売却する方でも安心してご相談いただける環境を整えています。</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
 
-{{-- ============================================================
-     4つの安心保証
-     ============================================================ --}}
-<section class="section buy-guarantee-section">
-    <div class="container">
-        <div class="buy-section-head">
-            <p class="buy-section-eyebrow">OUR PROMISE</p>
-            <h2 class="buy-section-title">4つの<em>安心保証</em></h2>
-            <p class="buy-section-sub">安心してお任せいただくための4つのお約束</p>
+        <div class="p-buy-hero__intro">
+            <p class="c-hero__tag"><x-site.icon name="map-pin" />兵庫県尼崎市下坂部の中古車販売店</p>
+            <h1 class="c-hero__catch p-buy-hero__catch" id="buy-title">
+                <span class="c-slant c-slant--black"><span class="u-nowrap">尼崎の中古車買取・</span></span>
+                <span class="c-slant c-slant--red"><span class="u-nowrap">無料査定</span></span>
+            </h1>
+            <p class="c-slant c-slant--white p-buy-hero__sub"><em class="p-buy-hero__mark">査定無料</em><span class="u-nowrap">査定額を聞いてから、</span><span class="u-nowrap">売るかどうかを</span><span class="u-nowrap">決められます。</span></p>
+            <ul class="p-buy-hero__badges" role="list">
+                <li><x-site.round-badge variant="yellow" top="査定" num="無料" /></li>
+                <li><x-site.round-badge variant="yellow" top="査定だけ" num="でもOK" /></li>
+                <li><x-site.round-badge variant="yellow" top="入力" num="約3分" /></li>
+            </ul>
         </div>
-        <div class="buy-guarantee-grid">
-            <div class="buy-guarantee-card">
-                <div class="buy-guarantee-icon buy-guarantee-icon--red">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <h3>査定後の<br>減額なし</h3>
-                <p>一度ご提示した査定額を後から下げることは一切ありません。ご安心ください。</p>
-            </div>
-            <div class="buy-guarantee-card">
-                <div class="buy-guarantee-icon buy-guarantee-icon--blue">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                </div>
-                <h3>キャンセル<br>無料</h3>
-                <p>査定後に売却をお断りいただいても費用は一切かかりません。気軽にご相談ください。</p>
-            </div>
-            <div class="buy-guarantee-card">
-                <div class="buy-guarantee-icon buy-guarantee-icon--green">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                </div>
-                <h3>しつこい<br>営業なし</h3>
-                <p>査定後に売却をお断りいただいても、その後のしつこい勧誘は一切行いません。</p>
-            </div>
-            <div class="buy-guarantee-card">
-                <div class="buy-guarantee-icon buy-guarantee-icon--gold">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                </div>
-                <h3>個人情報の<br>厳重管理</h3>
-                <p>お預かりした個人情報は第三者に提供せず、プライバシーポリシーに従い厳重に管理します。</p>
-            </div>
-        </div>
-    </div>
-</section>
 
-{{-- ============================================================
-     どんな車でも買取
-     ============================================================ --}}
-<section class="section buy-any-section">
-    <div class="container">
-        <div class="buy-section-head">
-            <p class="buy-section-eyebrow">ANY CAR WELCOME</p>
-            <h2 class="buy-section-title">どんなお車でも<em>買取します</em></h2>
-        </div>
-        <div class="buy-any-grid">
-            <div class="buy-any-item">
-                <span class="buy-any-icon">🚗</span>
-                <span>事故車・修復歴あり</span>
-            </div>
-            <div class="buy-any-item">
-                <span class="buy-any-icon">📋</span>
-                <span>車検切れ</span>
-            </div>
-            <div class="buy-any-item">
-                <span class="buy-any-icon">🔢</span>
-                <span>走行距離が多い</span>
-            </div>
-            <div class="buy-any-item">
-                <span class="buy-any-icon">💳</span>
-                <span>ローン残債あり</span>
-            </div>
-            <div class="buy-any-item">
-                <span class="buy-any-icon">🔧</span>
-                <span>不動車・故障車</span>
-            </div>
-            <div class="buy-any-item">
-                <span class="buy-any-icon">📅</span>
-                <span>旧年式・古い車</span>
-            </div>
-        </div>
-        <p class="buy-any-note">※ 状態によっては買取できない場合もございます。まずはお気軽にご相談ください。</p>
-    </div>
-</section>
+        <form id="appraisal-form" class="p-buy-form" method="POST" action="{{ route('buy.send') }}" data-submit-once
+              aria-labelledby="appraisal-form-title"
+              x-data="buyAppraisalForm({{ $initialStep }})"
+              x-on:keydown.enter="onEnter($event)"
+              x-on:click="onErrorLink($event)">
+            @csrf
 
-{{-- ============================================================
-     売却の流れ
-     ============================================================ --}}
-<section class="section section-gray">
-    <div class="container">
-        <div class="buy-section-head">
-            <p class="buy-section-eyebrow">HOW IT WORKS</p>
-            <h2 class="buy-section-title">売却までの<em>5ステップ</em></h2>
-        </div>
-        <div class="buy-steps">
-            <div class="buy-step">
-                <div class="buy-step-circle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </div>
-                <div class="buy-step-body">
-                    <span class="buy-step-num">STEP 1</span>
-                    <h3 class="buy-step-title">査定依頼</h3>
-                    <p class="buy-step-desc">車の情報と連絡先を入力。入力時間は約3分。無料なので、気軽にご依頼ください。</p>
-                </div>
-            </div>
-            <div class="buy-step">
-                <div class="buy-step-circle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                </div>
-                <div class="buy-step-body">
-                    <span class="buy-step-num">STEP 2</span>
-                    <h3 class="buy-step-title">買取査定</h3>
-                    <p class="buy-step-desc">査定スタッフがご連絡します。出張査定など実車確認が必要な場合もございます。</p>
-                </div>
-            </div>
-            <div class="buy-step">
-                <div class="buy-step-circle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                </div>
-                <div class="buy-step-body">
-                    <span class="buy-step-num">STEP 3</span>
-                    <h3 class="buy-step-title">査定価格を比較</h3>
-                    <p class="buy-step-desc">提示された査定額をご確認いただき、納得できる金額が出たら売却先を決定します。</p>
-                </div>
-            </div>
-            <div class="buy-step">
-                <div class="buy-step-circle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                </div>
-                <div class="buy-step-body">
-                    <span class="buy-step-num">STEP 4</span>
-                    <h3 class="buy-step-title">売却手続き</h3>
-                    <p class="buy-step-desc">面倒な売却手続きは担当スタッフが丁寧にサポートします。書類準備もご安心ください。</p>
-                </div>
-            </div>
-            <div class="buy-step buy-step--last">
-                <div class="buy-step-circle buy-step-circle--final">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <div class="buy-step-body">
-                    <span class="buy-step-num">STEP 5</span>
-                    <h3 class="buy-step-title">引き渡し・完了</h3>
-                    <p class="buy-step-desc">必要書類を揃え、荷物を片付けて車を引き渡します。代金をお受け取りいただき完了です。</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ============================================================
-     詳細査定フォーム
-     ============================================================ --}}
-<section class="section section-white" id="appraisal-form">
-    <div class="container">
-        <div class="buy-form-wrap">
-            <div class="buy-section-head">
-                <p class="buy-section-eyebrow">FREE ESTIMATE</p>
-                <h2 class="buy-section-title">詳細情報で<em>より正確な査定</em>を</h2>
-                <p class="buy-section-sub">車両状態や詳細情報をお知らせいただくと、より正確な査定額をご提示できます。</p>
+            <div class="p-buy-form__head">
+                <p class="c-slant c-slant--yellow p-buy-form__kicker">かんたん3ステップ</p>
+                <h2 id="appraisal-form-title" class="p-buy-form__title"><x-site.icon name="car" />無料査定のお申し込み<span class="u-nowrap">（約3分）</span></h2>
+                <p class="p-buy-form__lead">必須の項目だけでも送信できます。年式や走行距離は、おおよそで大丈夫です。</p>
             </div>
 
-            {{-- 安心ポイント --}}
-            <div class="buy-form-assurance">
-                <div class="buy-form-assurance-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-                    査定料無料
-                </div>
-                <div class="buy-form-assurance-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-                    売却しなくてもOK
-                </div>
-                <div class="buy-form-assurance-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-                    しつこい営業なし
-                </div>
-                <div class="buy-form-assurance-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-                    個人情報は厳重管理
-                </div>
-            </div>
+            <div class="p-buy-form__body">
+                {{-- エラー一覧は画面の欄の並び（STEP.1 お車の情報 → STEP.2 ご連絡先 → STEP.3 そのほか）の順に出す（検証ルールの順とは違うため） --}}
+                <x-site.form-errors :order="['make', 'model', 'model_year', 'mileage', 'condition', 'name', 'phone', 'email', 'grade', 'color', 'zip', 'message']" />
 
-            @if($errors->any())
-            <div class="alert-box" role="alert">
-                <p class="alert-box-title">入力内容にエラーがあります</p>
-                <ul>
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                {{-- 進み具合（丸の番号と、それをつなぐ赤いバー） --}}
+                <ol class="p-buy-progress" x-ref="progress" data-current="{{ $initialStep }}" x-bind:data-current="step" aria-label="お申し込みの手順（全3ステップ）">
+                    @foreach ($stepLabels as $number => $label)
+                        <li class="p-buy-progress__item{{ $number === $initialStep ? ' is-current' : ($number < $initialStep ? ' is-done' : '') }}"
+                            @if ($number === $initialStep) aria-current="step" @endif
+                            x-bind:class="{ 'is-current': step === {{ $number }}, 'is-done': step > {{ $number }} }"
+                            x-bind:aria-current="step === {{ $number }} ? 'step' : null">
+                            <span class="p-buy-progress__num"><span class="p-buy-progress__digit">{{ $number }}</span><x-site.icon name="check" class="p-buy-progress__check" /></span>
+                            <span class="p-buy-progress__label">{{ $nowrap($label) }}</span>
+                            <span class="u-visually-hidden" x-text="step > {{ $number }} ? '（入力済み）' : ''"></span>
+                        </li>
                     @endforeach
-                </ul>
-            </div>
-            @endif
+                </ol>
 
-            <div class="buy-form-card">
-                <form action="{{ route('buy.send') }}" method="POST">
-                    @csrf
+                {{-- ステップ1：お車の情報 --}}
+                <div class="c-form" data-step="1" role="group" aria-labelledby="buy-step1-title"
+                     x-show="step === 1" @if ($initialStep !== 1) x-cloak @endif>
+                    <h3 id="buy-step1-title" class="c-subhead p-buy-step__title" tabindex="-1" data-step-title>ステップ1：お車の情報</h3>
 
-                    {{-- 車両情報 --}}
-                    <div class="buy-form-section">
-                        <div class="buy-form-section-title">
-                            <span class="store-card-title-badge">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h3l3 3v5h-3"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                            </span>
-                            お車の情報
+                    <div class="p-buy-form__row">
+                        <div class="c-field">
+                            <label class="c-field__label" for="make">メーカー <span class="c-badge-req">必須</span></label>
+                            <p class="c-field__hint" id="make-hint">例）トヨタ（一覧から選ぶか、文字で入力）</p>
+                            <input class="c-field__input" type="text" id="make" name="make" value="{{ old('make') }}" list="make-list" maxlength="100" autocomplete="off" required
+                                   aria-describedby="make-hint @error('make') make-error @enderror" @error('make') aria-invalid="true" @enderror>
+                            <datalist id="make-list">
+                                @foreach ($makeOptions as $make)
+                                    <option value="{{ $make }}"></option>
+                                @endforeach
+                            </datalist>
+                            <x-site.field-error name="make" />
                         </div>
 
-                        <div class="form-grid form-group">
-                            <div>
-                                <label class="form-label" for="make">メーカー <span class="required">*</span></label>
-                                <input class="form-input" id="make" type="text" name="make"
-                                       value="{{ old('make') }}" required placeholder="例：トヨタ"
-                                       list="makes-list">
-                                <datalist id="makes-list">
-                                    @foreach ($makes ?? [] as $make)
-                                        <option value="{{ $make }}">
+                        <div class="c-field">
+                            <label class="c-field__label" for="model">車種 <span class="c-badge-req">必須</span></label>
+                            <p class="c-field__hint" id="model-hint">例）プリウス、N-BOX</p>
+                            <input class="c-field__input" type="text" id="model" name="model" value="{{ old('model') }}" maxlength="100" autocomplete="off" required
+                                   aria-describedby="model-hint @error('model') model-error @enderror" @error('model') aria-invalid="true" @enderror>
+                            <x-site.field-error name="model" />
+                        </div>
+                    </div>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="model_year">年式 <span class="c-badge-req">必須</span></label>
+                        <p class="c-field__hint" id="model_year-hint">車検証の「初度登録年月」に書かれています。一覧には和暦（令和・平成）も書いてあります。</p>
+                        <select class="c-field__input c-field__input--select" id="model_year" name="model_year" required
+                                aria-describedby="model_year-hint @error('model_year') model_year-error @enderror" @error('model_year') aria-invalid="true" @enderror>
+                            <option value="">選んでください</option>
+                            @foreach ($yearOptions as $year)
+                                <option value="{{ $year }}" @selected((string) old('model_year') === (string) $year)>{{ \App\Support\CarText::year($year, true) }}</option>
+                            @endforeach
+                        </select>
+                        <x-site.field-error name="model_year" />
+                    </div>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="mileage">走行距離 <span class="c-badge-req">必須</span></label>
+                        <p class="c-field__hint" id="mileage-hint">おおよそで大丈夫です（例：45000）</p>
+                        <div class="c-field__with-unit">
+                            <input class="c-field__input" type="number" inputmode="numeric" id="mileage" name="mileage" value="{{ old('mileage') }}" min="0" max="9999999" step="1" autocomplete="off" required
+                                   aria-describedby="mileage-hint @error('mileage') mileage-error @enderror" @error('mileage') aria-invalid="true" @enderror>
+                            <span class="c-field__unit">km</span>
+                        </div>
+                        <x-site.field-error name="mileage" />
+                    </div>
+
+                    <fieldset class="c-field" aria-describedby="condition-hint @error('condition') condition-error @enderror">
+                        <legend class="c-field__label c-field__legend">お車の状態 <span class="c-badge-req">必須</span></legend>
+                        <p class="c-field__hint" id="condition-hint">いちばん近いものを選んでください。迷ったら「小さな傷やへこみがある」で大丈夫です。</p>
+                        <div class="c-choice-group p-buy-cond">
+                            @foreach ($conditions as $value => $condition)
+                                <label class="c-choice">
+                                    <input class="c-choice__input" type="radio" name="condition" value="{{ $value }}" required
+                                           @if ($loop->first) id="condition" @endif
+                                           @checked(old('condition', 'normal') === $value)
+                                           @error('condition') aria-invalid="true" @enderror>
+                                    <span class="c-choice__box">
+                                        <span class="p-buy-cond__ic p-buy-cond__ic--{{ $value }}"><x-site.icon :name="$condition['icon']" :size="24" /></span>
+                                        <span class="p-buy-cond__label">{{ $nowrap($condition['label']) }}</span>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <x-site.field-error name="condition" />
+                    </fieldset>
+
+                    <div class="p-buy-form__nav">
+                        <x-site.btn2 block small="つぎは、ご連絡先の入力です" big="次へ進む" x-on:click="next()" />
+                    </div>
+                </div>
+
+                {{-- ステップ2：ご連絡先 --}}
+                <div class="c-form" data-step="2" role="group" aria-labelledby="buy-step2-title"
+                     x-show="step === 2" @if ($initialStep !== 2) x-cloak @endif>
+                    <h3 id="buy-step2-title" class="c-subhead p-buy-step__title" tabindex="-1" data-step-title>ステップ2：ご連絡先</h3>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="name">お名前 <span class="c-badge-req">必須</span></label>
+                        <p class="c-field__hint" id="name-hint">例）山田 太郎</p>
+                        <input class="c-field__input" type="text" id="name" name="name" value="{{ old('name') }}" maxlength="100" autocomplete="name" required
+                               aria-describedby="name-hint @error('name') name-error @enderror" @error('name') aria-invalid="true" @enderror>
+                        <x-site.field-error name="name" />
+                    </div>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="phone">お電話番号 <span class="c-badge-req">必須</span></label>
+                        <p class="c-field__hint" id="phone-hint">日中につながりやすい番号をご記入ください（例：090-1234-5678）</p>
+                        <input class="c-field__input" type="tel" inputmode="tel" id="phone" name="phone" value="{{ old('phone') }}" maxlength="20" autocomplete="tel" required
+                               aria-describedby="phone-hint @error('phone') phone-error @enderror" @error('phone') aria-invalid="true" @enderror>
+                        <x-site.field-error name="phone" />
+                    </div>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="email">メールアドレス <span class="c-badge-req">必須</span></label>
+                        <p class="c-field__hint" id="email-hint">例）taro@example.com</p>
+                        <input class="c-field__input" type="email" id="email" name="email" value="{{ old('email') }}" maxlength="255" autocomplete="email" required
+                               aria-describedby="email-hint @error('email') email-error @enderror" @error('email') aria-invalid="true" @enderror>
+                        <x-site.field-error name="email" />
+                    </div>
+
+                    <div class="p-buy-form__nav">
+                        <x-site.btn2 block small="つぎは、そのほか（任意）です" big="次へ進む" x-on:click="next()" />
+                        <button type="button" class="c-btn c-btn--secondary c-btn--block" x-on:click="back()"><x-site.icon name="chevron-left" />前に戻る</button>
+                    </div>
+                </div>
+
+                {{-- ステップ3：そのほか（任意）＋同意＋送信 --}}
+                <div class="c-form" data-step="3" role="group" aria-labelledby="buy-step3-title"
+                     x-show="step === 3" @if ($initialStep !== 3) x-cloak @endif>
+                    <h3 id="buy-step3-title" class="c-subhead p-buy-step__title" tabindex="-1" data-step-title>ステップ3：そのほか（任意）</h3>
+                    <p class="p-buy-form__text">この欄は空いたままでも送信できます。わかる範囲でご記入ください。</p>
+
+                    <div class="p-buy-form__row">
+                        <div class="c-field">
+                            <label class="c-field__label" for="grade">グレード <span class="c-badge-req c-badge-req--optional">任意</span></label>
+                            <p class="c-field__hint" id="grade-hint">わからなければ空欄で大丈夫です（例：S、ハイブリッドG）</p>
+                            <input class="c-field__input" type="text" id="grade" name="grade" value="{{ old('grade') }}" maxlength="100" autocomplete="off"
+                                   aria-describedby="grade-hint @error('grade') grade-error @enderror" @error('grade') aria-invalid="true" @enderror>
+                            <x-site.field-error name="grade" />
+                        </div>
+
+                        <div class="c-field">
+                            <label class="c-field__label" for="color">ボディカラー <span class="c-badge-req c-badge-req--optional">任意</span></label>
+                            <p class="c-field__hint" id="color-hint">例）パールホワイト、シルバー</p>
+                            <input class="c-field__input" type="text" id="color" name="color" value="{{ old('color') }}" maxlength="60" autocomplete="off"
+                                   aria-describedby="color-hint @error('color') color-error @enderror" @error('color') aria-invalid="true" @enderror>
+                            <x-site.field-error name="color" />
+                        </div>
+                    </div>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="zip">郵便番号（出張査定をご希望の場合） <span class="c-badge-req c-badge-req--optional">任意</span></label>
+                        <p class="c-field__hint" id="zip-hint">例）6610975（「-」はなくても大丈夫です）。ご住所は、あとでお電話でうかがいます。</p>
+                        <input class="c-field__input" type="text" inputmode="numeric" id="zip" name="zip" value="{{ old('zip') }}" maxlength="10" autocomplete="postal-code"
+                               aria-describedby="zip-hint @error('zip') zip-error @enderror" @error('zip') aria-invalid="true" @enderror>
+                        <x-site.field-error name="zip" />
+                    </div>
+
+                    <div class="c-field">
+                        <label class="c-field__label" for="message">お車について・ご要望 <span class="c-badge-req c-badge-req--optional">任意</span></label>
+                        <p class="c-field__hint" id="message-hint">修復歴の有無、車検の期限、ローンが残っているかどうかをご記入いただくと、査定額をお伝えしやすくなります。{{ \App\Support\CarText::REPAIR_DEFINITION }}ご希望の連絡の時間帯もどうぞ。</p>
+                        <textarea class="c-field__input c-field__input--textarea" id="message" name="message" maxlength="2000"
+                                  aria-describedby="message-hint @error('message') message-error @enderror" @error('message') aria-invalid="true" @enderror>{{ old('message') }}</textarea>
+                        <x-site.field-error name="message" />
+                    </div>
+
+                    <x-site.privacy-consent />
+
+                    <div class="p-buy-form__nav">
+                        <x-site.btn2 type="submit" block small="査定は無料です" big="無料査定を申し込む" data-busy-label="申し込んでいます…" x-on:click="beforeSubmit($event)" />
+                        <p class="p-buy-form__note">送信後、担当者から電話またはメールでご連絡します。定休日（{{ $closedLabel }}）をはさむ場合は、翌営業日以降のご連絡になります。</p>
+                        <button type="button" class="c-btn c-btn--secondary c-btn--block" x-on:click="back()"><x-site.icon name="chevron-left" />前に戻る</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {{-- 電話でも申し込める（PC はフォームの左、スマホはフォームの下） --}}
+        <div class="p-buy-hero__aside">
+            <section class="c-card c-card--accent p-buy-tel" aria-labelledby="buy-tel-title">
+                <h2 id="buy-tel-title" class="p-buy-tel__title">{{ $nowrap(['お電話でも', 'お申し込みいただけます']) }}</h2>
+                <a class="p-buy-tel__num" href="{{ $telHref }}" aria-label="電話をかける {{ $tel }}"><x-site.icon name="phone" /><span>{{ $tel }}</span></a>
+                <p class="p-buy-tel__text">「買取の査定について」とお伝えください。お車の年式や走行距離をお聞きします。</p>
+                <div class="p-buy-tel__status">
+                    <p class="p-buy-tel__hours">{{ $hoursLine }}</p>
+                    <x-site.open-status />
+                </div>
+                @if (config('shop.line_url'))
+                    <a class="c-btn c-btn--line c-btn--block" href="{{ config('shop.line_url') }}" target="_blank" rel="noopener">
+                        <x-site.icon name="line" />LINEで相談<span class="u-visually-hidden">（新しいタブで開きます）</span>
+                    </a>
+                @endif
+            </section>
+
+            {{-- 車検証のメモ（スマホ・タブレット。PC は下の「入力するのは、この3つ」の中に入れる） --}}
+            <div class="p-buy-memo u-hide-pc">
+                <span class="p-buy-memo__ic"><x-site.icon name="file" :size="28" /></span>
+                <div class="p-buy-memo__body">
+                    <p class="p-buy-memo__title">{{ $nowrap(['車検証があると、', '入力がかんたんです']) }}</p>
+                    <p class="p-buy-memo__text">年式は、車検証の「初度登録年月」でわかります。お手元になくても、おおよそで大丈夫です。</p>
+                </div>
+            </div>
+
+            {{-- PC だけ：フォームの左に、入力する項目の一覧（スマホはフォームのすぐ下なので出さない） --}}
+            <section class="c-card p-buy-guide u-hide-sp" aria-labelledby="buy-guide-title">
+                <p class="c-slant c-slant--yellow p-buy-guide__kicker">入力は約3分</p>
+                <h2 id="buy-guide-title" class="p-buy-guide__title">{{ $nowrap(['入力するのは、', 'この3つです']) }}</h2>
+                <ol class="p-buy-guide__list">
+                    @foreach ($guide as $item)
+                        <li class="p-buy-guide__item{{ $item['optional'] ? ' p-buy-guide__item--optional' : '' }}">
+                            <span class="p-buy-guide__no" aria-hidden="true">{{ $loop->iteration }}</span>
+                            <div class="p-buy-guide__body">
+                                <p class="p-buy-guide__name">{{ $item['title'] }}
+                                    <span class="c-badge-req{{ $item['optional'] ? ' c-badge-req--optional' : '' }}">{{ $item['optional'] ? '任意' : '必須' }}</span></p>
+                                <ul class="p-buy-guide__chips">
+                                    @foreach ($item['fields'] as $field)
+                                        <li class="p-buy-guide__chip">@if (filled($field['icon']))<x-site.icon :name="$field['icon']" :size="18" />@endif{{ $field['label'] }}</li>
                                     @endforeach
-                                    <option value="トヨタ">
-                                    <option value="日産">
-                                    <option value="ホンダ">
-                                    <option value="スズキ">
-                                    <option value="ダイハツ">
-                                    <option value="マツダ">
-                                    <option value="スバル">
-                                    <option value="三菱">
-                                    <option value="レクサス">
-                                </datalist>
+                                </ul>
                             </div>
-                            <div>
-                                <label class="form-label" for="model">車名 <span class="required">*</span></label>
-                                <input class="form-input" id="model" type="text" name="model"
-                                       value="{{ old('model') }}" required placeholder="例：プリウス">
-                            </div>
-                        </div>
-
-                        <div class="form-grid form-group">
-                            <div>
-                                <label class="form-label" for="grade">グレード</label>
-                                <input class="form-input" id="grade" type="text" name="grade"
-                                       value="{{ old('grade') }}" placeholder="例：Gグレード">
-                            </div>
-                            <div>
-                                <label class="form-label" for="color">車体色</label>
-                                <input class="form-input" id="color" type="text" name="color"
-                                       value="{{ old('color') }}" placeholder="例：パールホワイト">
-                            </div>
-                        </div>
-
-                        <div class="form-grid form-group">
-                            <div>
-                                <label class="form-label" for="model_year">年式 <span class="required">*</span></label>
-                                <select class="form-input" id="model_year" name="model_year" required>
-                                    <option value="">選択してください</option>
-                                    @for ($y = date('Y'); $y >= 1990; $y--)
-                                        <option value="{{ $y }}" @selected(old('model_year') == $y)>{{ $y }}年</option>
-                                    @endfor
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label" for="mileage">走行距離(km) <span class="required">*</span></label>
-                                <input class="form-input" id="mileage" type="number" name="mileage"
-                                       value="{{ old('mileage') }}" required placeholder="例：45000" min="0">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">車両状態 <span class="required">*</span></label>
-                            <div class="buy-condition-btns">
-                                <label class="buy-condition-label {{ old('condition') === 'good' ? 'selected' : '' }}">
-                                    <input type="radio" name="condition" value="good" @checked(old('condition') === 'good')>
-                                    <span class="buy-condition-icon">😊</span>
-                                    <span class="buy-condition-text">良好<small>目立つ傷・凹みなし</small></span>
-                                </label>
-                                <label class="buy-condition-label {{ old('condition', 'normal') === 'normal' ? 'selected' : '' }}">
-                                    <input type="radio" name="condition" value="normal" @checked(old('condition', 'normal') === 'normal')>
-                                    <span class="buy-condition-icon">😐</span>
-                                    <span class="buy-condition-text">普通<small>多少の傷・汚れあり</small></span>
-                                </label>
-                                <label class="buy-condition-label {{ old('condition') === 'damaged' ? 'selected' : '' }}">
-                                    <input type="radio" name="condition" value="damaged" @checked(old('condition') === 'damaged')>
-                                    <span class="buy-condition-icon">😟</span>
-                                    <span class="buy-condition-text">傷・凹みあり<small>目立つ損傷がある</small></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- 申込者情報 --}}
-                    <div class="buy-form-section">
-                        <div class="buy-form-section-title">
-                            <span class="store-card-title-badge">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            </span>
-                            お客様情報
-                        </div>
-
-                        <div class="form-grid form-group">
-                            <div>
-                                <label class="form-label" for="name">お名前 <span class="required">*</span></label>
-                                <input class="form-input" id="name" type="text" name="name"
-                                       value="{{ old('name') }}" required placeholder="山田 太郎">
-                            </div>
-                            <div>
-                                <label class="form-label" for="phone">電話番号 <span class="required">*</span></label>
-                                <input class="form-input" id="phone" type="tel" name="phone"
-                                       value="{{ old('phone') }}" required placeholder="090-0000-0000">
-                            </div>
-                        </div>
-
-                        <div class="form-grid form-group">
-                            <div>
-                                <label class="form-label" for="email">メールアドレス <span class="required">*</span></label>
-                                <input class="form-input" id="email" type="email" name="email"
-                                       value="{{ old('email') }}" required placeholder="example@mail.com">
-                            </div>
-                            <div>
-                                <label class="form-label" for="zip">郵便番号</label>
-                                <input class="form-input" id="zip" type="text" name="zip"
-                                       value="{{ old('zip') }}" placeholder="000-0000">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="message">備考・ご要望</label>
-                            <textarea class="form-input" id="message" name="message"
-                                      placeholder="修復歴の有無、オプション装備、ご希望の査定日時など" style="height:110px;resize:vertical;">{{ old('message') }}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="buy-form-submit">
-                        <button class="buy-submit-btn" type="submit">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-                            無料査定を申し込む
-                        </button>
-                        <p class="buy-form-note">送信後、担当スタッフよりご連絡いたします。しつこい勧誘は一切行いません。</p>
-                    </div>
-                </form>
-            </div>
+                        </li>
+                    @endforeach
+                </ol>
+                <p class="p-buy-guide__memo"><span class="p-buy-memo__ic"><x-site.icon name="file" :size="24" /></span><span>車検証があると入力がかんたんです。年式は「初度登録年月」でわかります。</span></p>
+            </section>
         </div>
     </div>
 </section>
 
-{{-- ============================================================
-     買取実績
-     ============================================================ --}}
-<section class="section section-gray">
-    <div class="container">
-        <div class="buy-section-head">
-            <p class="buy-section-eyebrow">APPRAISAL RESULTS</p>
-            <h2 class="buy-section-title">お客様の<em>買取実績</em></h2>
-            <p class="buy-section-sub">実際にご利用いただいたお客様の査定実績です。</p>
-        </div>
-        <div class="buy-results-grid">
-            @php
-            $results = [
-                ['car'=>'トヨタ アルファード','year'=>'2020年式','km'=>'2.8万km','price'=>'3,850,000','comment'=>'他社より50万円以上高い査定をしていただきました！','stars'=>5,'type'=>'ミニバン'],
-                ['car'=>'ホンダ ヴェゼル','year'=>'2019年式','km'=>'4.1万km','price'=>'1,920,000','comment'=>'丁寧に対応していただき、スムーズに売却できました。','stars'=>5,'type'=>'SUV'],
-                ['car'=>'日産 セレナ','year'=>'2018年式','km'=>'5.6万km','price'=>'1,580,000','comment'=>'思っていたより高く売れて大満足です！また利用したいです。','stars'=>5,'type'=>'ミニバン'],
-                ['car'=>'スズキ ジムニー','year'=>'2021年式','km'=>'1.2万km','price'=>'2,650,000','comment'=>'希少車だけあって予想以上の査定額でした。','stars'=>5,'type'=>'SUV'],
-                ['car'=>'トヨタ プリウス','year'=>'2017年式','km'=>'7.8万km','price'=>'980,000','comment'=>'出張査定をしてもらい、その場で契約できました。','stars'=>4,'type'=>'セダン'],
-                ['car'=>'マツダ CX-5','year'=>'2020年式','km'=>'3.3万km','price'=>'2,200,000','comment'=>'書類の準備など全てサポートしてもらえて助かりました。','stars'=>5,'type'=>'SUV'],
-            ];
-            @endphp
-            @foreach($results as $r)
-            <div class="buy-result-card">
-                <div class="buy-result-header">
-                    <div>
-                        <span class="buy-result-type">{{ $r['type'] }}</span>
-                        <p class="buy-result-car">{{ $r['car'] }}</p>
-                        <p class="buy-result-year">{{ $r['year'] }} / {{ $r['km'] }}</p>
-                    </div>
-                    <div class="buy-result-stars">
-                        @for($i = 0; $i < 5; $i++)
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="{{ $i < $r['stars'] ? '#f59e0b' : '#e5e7eb' }}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        @endfor
-                    </div>
-                </div>
-                <div class="buy-result-price-row">
-                    <span class="buy-result-label">査定額</span>
-                    <span class="buy-result-price">{{ $r['price'] }}<small>円</small></span>
-                </div>
-                <p class="buy-result-comment">「{{ $r['comment'] }}」</p>
-            </div>
+{{-- 2. お約束（黒の斜線地。1ページに1つ） --}}
+<section class="l-section l-section--dark" id="promise" aria-labelledby="buy-promise-title">
+    <div class="l-container">
+        <x-site.band-title id="buy-promise-title" :title="'買取の'.count($promises).'つのお約束'" en="PROMISE"
+            lead="安心してご相談いただくために、次のことをお約束します。" />
+        <ol class="c-promises p-buy-promises">
+            @foreach ($promises as $promise)
+                <x-site.promise :no="$loop->iteration" :illust="$promise['illust']" :title="$nowrap($promise['title'])">
+                    {{ $promise['text'] }}
+                    <x-slot:visual>
+                        @switch ($promise['visual'])
+                            @case ('zero')
+                                <p class="p-buy-zero"><span class="p-buy-zero__label">査定料</span><b class="p-buy-zero__num">0</b><span class="p-buy-zero__unit">円</span></p>
+                                <p class="c-promise__note">売らなかった場合も、費用はかかりません。</p>
+                                @break
+                            @case ('choice')
+                                <div class="c-promise__box p-buy-choice">
+                                    <span class="c-tag c-tag--black">査定額を聞く</span>
+                                    <x-site.icon name="chevron-right" class="p-buy-choice__arrow" />
+                                    <span class="c-tag c-tag--red">売る</span>
+                                    <span class="p-buy-choice__or">または</span>
+                                    <span class="c-tag c-tag--outline">売らない</span>
+                                </div>
+                                <p class="c-promise__note">売らなくても費用はかかりません。</p>
+                                @break
+                            @case ('checks')
+                                <ul class="c-promise__checks">
+                                    <li class="c-promise__check"><x-site.icon name="check" />ご売却の手続きの流れ</li>
+                                    <li class="c-promise__check"><x-site.icon name="check" />ご用意いただく書類</li>
+                                </ul>
+                                @break
+                            @case ('privacy')
+                                <p class="c-promise__box p-buy-privacy"><x-site.icon name="shield" />ほかの目的には使いません</p>
+                                <p class="c-promise__note">くわしくは<a class="c-link" href="{{ route('privacy') }}">個人情報の取り扱い</a>をご覧ください。</p>
+                                @break
+                        @endswitch
+                    </x-slot:visual>
+                </x-site.promise>
             @endforeach
+        </ol>
+    </div>
+</section>
+
+{{-- 3. こんなお車もご相談ください --}}
+<section class="l-section" id="cases" aria-labelledby="buy-cases-title">
+    <div class="l-container">
+        <x-site.section-head id="buy-cases-title" title="こんなお車もご相談ください" en="CONSULT" center
+            lead="古いお車や動かないお車でも、まずはお気軽にご相談ください。" />
+        <ul class="p-buy-cases" role="list">
+            @foreach ($cases as $case)
+                <li class="p-buy-case">
+                    <div class="p-buy-case__art">
+                        <x-site.illust :name="$case['illust']" class="p-buy-case__ill" />
+                        @if (! empty($case['stamp']))
+                            <span class="p-buy-case__stamp" aria-hidden="true">{{ $case['stamp'] }}</span>
+                        @endif
+                    </div>
+                    <div class="p-buy-case__body">
+                        <h3 class="p-buy-case__title">{{ $nowrap($case['title']) }}</h3>
+                        <p class="p-buy-case__text">{{ $case['text'] }}</p>
+                    </div>
+                </li>
+            @endforeach
+        </ul>
+        <div class="c-alert p-buy-cases__note">
+            <x-site.icon name="info" />
+            <p>お車の状態によっては、<b>買取できない場合</b>もあります。まずは状態をお聞かせください。</p>
         </div>
-        <p class="buy-results-note">※ 査定額は査定時の市場状況により異なります。上記は実績の一例です。</p>
-        <div class="buy-results-cta">
-            <a href="#appraisal-form" class="buy-results-cta-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                私も無料で査定してみる
-            </a>
+        <div class="c-cta-row">
+            <x-site.btn2 href="#appraisal-form" small="査定は無料です" big="無料査定を申し込む" />
+            <x-site.btn2 :href="$telHref" variant="black" icon="phone" num :small="'電話で相談する（'.$hoursLabel.'）'" :big="$tel" :aria-label="'電話をかける '.$tel" />
         </div>
     </div>
 </section>
 
-{{-- ============================================================
-     よくあるご質問
-     ============================================================ --}}
-<section class="section section-white">
-    <div class="container">
-        <div class="buy-section-head">
-            <p class="buy-section-eyebrow">FAQ</p>
-            <h2 class="buy-section-title">よくある<em>ご質問</em></h2>
-        </div>
-        <div class="buy-faq-wrap">
-            @php
-            $faqs = [
-                ['q'=>'査定は本当に無料ですか？', 'a'=>'はい、査定料・手数料は完全無料です。売却に至らない場合でも費用は一切かかりません。お気軽にお申し込みください。'],
-                ['q'=>'査定後に断ることはできますか？', 'a'=>'もちろんできます。査定額をご確認いただいた後、売却するかどうかはお客様が自由に決めることができます。しつこい勧誘は一切行いません。'],
-                ['q'=>'事故車・走行距離が多い車でも査定してもらえますか？', 'a'=>'はい、状態に関わらず査定いたします。走行距離が多い車や、傷・凹みがある車も買取可能な場合がございます。まずはお気軽にお申し込みください。'],
-                ['q'=>'車検切れ・ローン残債がある車でも売れますか？', 'a'=>'車検切れの車でも買取は可能です。ローン残債がある場合は、一括返済後に売却となるケースが多いです。詳しくはお問い合わせください。'],
-                ['q'=>'売却に必要な書類を教えてください。', 'a'=>'一般的に必要な書類は、車検証・自賠責保険証・リサイクル券・印鑑証明書（実印）・車庫証明などです。詳細はご成約時にスタッフが丁寧にご説明します。'],
-                ['q'=>'出張査定はしてもらえますか？', 'a'=>'はい、ご自宅や職場への出張査定に対応しております。お客様のご都合のよい日時・場所をお知らせください。もちろん出張費用も無料です。'],
-            ];
-            @endphp
-            <div class="buy-faq-list">
-                @foreach($faqs as $i => $faq)
-                <div class="buy-faq-item" x-data="{ open: false }">
-                    <button class="buy-faq-q" @click="open = !open" :class="{ 'buy-faq-q-open': open }">
-                        <span class="buy-faq-badge">Q</span>
-                        <span>{{ $faq['q'] }}</span>
-                        <svg class="buy-faq-arrow" :class="{ 'buy-faq-arrow-open': open }"
-                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </button>
-                    <div class="buy-faq-a" x-show="open" x-transition style="display:none;">
-                        <span class="buy-faq-a-badge">A</span>
-                        <p>{{ $faq['a'] }}</p>
+{{-- 4. ご売却の流れ（道路とメダルの5ステップ）＋必要な書類 --}}
+<section class="l-section l-section--soft" id="flow" aria-labelledby="buy-flow-title">
+    <div class="l-container">
+        <x-site.section-head id="buy-flow-title" title="ご売却の流れ" en="FLOW" lead="お申し込みから、お車のお引き渡しまでの5つのステップです。" />
+        <x-site.flow class="p-buy-flow" :steps="$flow" />
+
+        <div class="p-buy-docs">
+            <h3 class="c-subhead">ご売却に必要な書類</h3>
+            <p class="p-buy-docs__lead">ご契約のときに、次の書類をご用意ください。<b>査定のお申し込みの段階では、書類は必要ありません。</b></p>
+            <div class="p-buy-docs__grid">
+                @foreach ($documents as $document)
+                    <div class="c-table-wrap p-buy-doc">
+                        <table class="c-table">
+                            <caption class="p-buy-doc__caption">
+                                <span class="p-buy-doc__art"><x-site.illust :name="$document['illust']" class="p-buy-doc__ill" /></span>{{ $document['caption'] }}
+                            </caption>
+                            <tbody>
+                                @foreach ($document['rows'] as $row)
+                                    <tr>
+                                        <th scope="row" class="c-table__th">{{ $nowrap($row['name']) }}</th>
+                                        <td class="c-table__td">{{ $row['note'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
-                </div>
                 @endforeach
             </div>
+            <ul class="p-buy-docs__notes">
+                <li>車検証の住所や氏名が今と違う場合（引っ越し・結婚など）は、住民票や戸籍の附票などが追加で必要です。</li>
+                <li>車検証の「所有者」がローン会社やディーラーの場合は、名義を変えるための書類が必要です。お気軽にご相談ください。</li>
+            </ul>
         </div>
     </div>
 </section>
 
-{{-- ============================================================
-     再CTA
-     ============================================================ --}}
-<div class="buy-bottom-cta">
-    <div class="container">
-        <div class="buy-bottom-cta-inner">
-            <div class="buy-bottom-cta-text">
-                <p class="buy-bottom-cta-eyebrow">まずはお気軽にご相談ください</p>
-                <p class="buy-bottom-cta-title">無料査定を今すぐ申し込む</p>
-                <p class="buy-bottom-cta-sub">査定料・手数料完全無料 ／ しつこい勧誘一切なし ／ 契約後の減額なし</p>
-            </div>
-            <div class="buy-bottom-cta-btns">
-                <a href="#appraisal-form" class="buy-bottom-cta-main">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    無料で査定する
-                </a>
-                <a href="tel:0649608765" class="buy-bottom-cta-tel">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-                    06-4960-8765
-                </a>
+{{-- 5. よくある質問（FAQPage） --}}
+<section class="l-section" id="faq" aria-labelledby="buy-faq-title">
+    <div class="l-container l-container--narrow">
+        <x-site.section-head id="buy-faq-title" title="よくある質問" en="FAQ" />
+        <x-site.faq class="p-buy-faq" :items="$faqItems" jsonld />
+    </div>
+</section>
+
+{{-- 6. お店での査定 --}}
+<section class="l-section l-section--soft" id="shop" aria-labelledby="buy-shop-title">
+    <div class="l-container">
+        <x-site.section-head id="buy-shop-title" title="お店での査定もできます" en="SHOP"
+            :lead="$nowrap(['お車で直接お越しいただいても', '査定できます。', 'ご来店の前にお電話いただくと', 'スムーズです。'])" />
+        <div class="p-buy-shop">
+            <figure class="p-buy-shop__photo">
+                <picture>
+                    <source srcset="{{ asset('images/store-hero-bg.png.webp') }}" type="image/webp">
+                    <img class="p-buy-shop__img" src="{{ asset('images/store-hero-bg.png') }}" width="1584" height="672" loading="lazy"
+                         alt="{{ $shopName }}の店舗外観。電話番号の入った看板と、展示中の車が並んでいます">
+                </picture>
+                <figcaption class="p-buy-shop__caption"><span class="c-slant c-slant--yellow">この看板が目印です</span></figcaption>
+            </figure>
+
+            <div class="c-card c-card--accent p-buy-shop__info">
+                <p class="p-buy-shop__name"><x-site.icon name="store" />{{ $shopName }}</p>
+                <div class="c-table-wrap">
+                    <table class="c-table c-table--stack p-buy-shop__table">
+                        <caption class="u-visually-hidden">店舗の情報</caption>
+                        <tbody>
+                            <tr>
+                                <th scope="row" class="c-table__th"><x-site.icon name="map-pin" />住所</th>
+                                <td class="c-table__td"><x-site.address postal /></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="c-table__th"><x-site.icon name="phone" />電話</th>
+                                <td class="c-table__td"><a class="p-buy-shop__tel" href="{{ $telHref }}" aria-label="電話をかける {{ $tel }}">{{ $tel }}</a></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="c-table__th"><x-site.icon name="clock" />営業時間</th>
+                                <td class="c-table__td">{{ $hoursLabel }}<br><x-site.open-status /></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="c-table__th"><x-site.icon name="calendar" />定休日</th>
+                                <td class="c-table__td">{{ $closedLabel }}</td>
+                            </tr>
+                            @if (filled(config('shop.parking')))
+                                <tr>
+                                    <th scope="row" class="c-table__th"><x-site.icon name="parking" />駐車場</th>
+                                    <td class="c-table__td">{{ config('shop.parking') }}</td>
+                                </tr>
+                            @endif
+                            @if (filled($kobutsu['number'] ?? null))
+                                <tr>
+                                    <th scope="row" class="c-table__th"><x-site.icon name="shield" />古物商許可</th>
+                                    <td class="c-table__td">{{ $kobutsu['authority'] ?? '' }} 第{{ $kobutsu['number'] }}号@if (filled($kobutsu['holder'] ?? null))（{{ $kobutsu['holder'] }}）@endif</td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-buy-shop__actions">
+                    <a class="c-btn c-btn--primary c-btn--block" href="{{ config('shop.directions_url') }}" target="_blank" rel="noopener">
+                        <x-site.icon name="route" />地図アプリで道順を見る<span class="u-visually-hidden">（新しいタブで開きます）</span>
+                    </a>
+                    <a class="c-more" href="{{ route('store') }}">店舗案内・アクセスを詳しく見る<x-site.icon name="chevron-right" /></a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-{{-- ============================================================
-     スティッキーCTA（スマホ専用）
-     ============================================================ --}}
-<div class="buy-sticky-cta" id="buy-sticky-cta">
-    <a href="#appraisal-form" class="buy-sticky-cta-form">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        無料査定を申し込む
-    </a>
-    <a href="tel:0649608765" class="buy-sticky-cta-phone">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-        電話する
-    </a>
-</div>
+{{-- 7. 最後の案内（黒い写真地に斜めの赤い面・黄の丸バッジ＋2段ボタン） --}}
+<section class="l-section" id="apply" aria-labelledby="buy-final-title">
+    <div class="l-container">
+        <div class="c-promo p-buy-final">
+            <div class="c-promo__media"><picture><source type="image/webp" srcset="{{ asset('images/buy-hero-bg.jpg.webp') }}"><img src="{{ asset('images/buy-hero-bg.jpg') }}" alt="" width="1400" height="560" loading="lazy"></picture></div>
+            <div class="c-promo__body">
+                <p class="c-slant c-slant--yellow">まずは無料査定から</p>
+                <h2 class="c-promo__title" id="buy-final-title">お申し込みは、<br><em>フォームかお電話</em>で。</h2>
+                <p class="c-promo__lead">フォームは24時間受け付けています。お電話は営業時間内（{{ $hoursLabel }}、{{ $closedLabel }}定休）にどうぞ。</p>
+                <div class="c-promo__actions">
+                    <x-site.btn2 href="#appraisal-form" variant="yellow" small="査定は無料です" big="無料査定を申し込む" />
+                    <a class="c-promo__tel" href="{{ $telHref }}" aria-label="電話をかける {{ $tel }}"><small>お電話でも受付中（{{ $hoursLabel }}）</small><b><x-site.icon name="phone" />{{ $tel }}</b></a>
+                </div>
+            </div>
+            <ul class="c-promo__badges" role="list">
+                <li><x-site.round-badge variant="yellow" top="査定" num="無料" /></li>
+                <li><x-site.round-badge variant="yellow" top="査定だけ" num="でもOK" /></li>
+                <li><x-site.round-badge variant="yellow" top="フォームは" num="24時間" bottom="受付" /></li>
+            </ul>
+        </div>
+    </div>
+</section>
 
-<script>
-// 車両状態ラジオボタン
-document.querySelectorAll('.buy-condition-label input[type="radio"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-        document.querySelectorAll('.buy-condition-label').forEach(l => l.classList.remove('selected'));
-        if (radio.checked) radio.closest('.buy-condition-label').classList.add('selected');
-    });
-});
-
-// スティッキーCTA: ヒーローを過ぎたら表示
-(function() {
-    const cta = document.getElementById('buy-sticky-cta');
-    const hero = document.querySelector('.buy-hero');
-    if (!cta || !hero) return;
-    function check() {
-        const heroBottom = hero.getBoundingClientRect().bottom;
-        cta.classList.toggle('is-visible', heroBottom < 0);
-    }
-    window.addEventListener('scroll', check, { passive: true });
-    check();
-})();
-</script>
+{{--
+    買取実績（旧ページの直書き6件）は削除した。
+    復活の条件：実際の取引の記録（買取の時期・車種・年式・走行距離・買取価格〈成約額〉）がそろい、掲載の同意を確認できたら、
+    管理画面から登録したデータだけを「買取価格（成約額）」として、時期と一緒に表示する。評価の星・「他社より」の比較は載せない。
+--}}
 
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    // 買取査定フォーム（3ステップ）。送信はしないステップの切り替えと、隠れたステップにある欄の検証・エラーへの移動を受け持つ
+    Alpine.data('buyAppraisalForm', (initialStep = 1) => ({
+        step: initialStep,
+        total: 3,
+        form: null,
+
+        init() {
+            this.form = this.$root;
+        },
+
+        stepBox(number) {
+            return this.form.querySelector('[data-step="' + number + '"]');
+        },
+
+        stepOf(element) {
+            const box = element.closest('[data-step]');
+            return box ? Number(box.dataset.step) : null;
+        },
+
+        firstInvalid(scope) {
+            return Array.from(scope.querySelectorAll('input, select, textarea'))
+                .find((element) => element.willValidate && !element.checkValidity()) || null;
+        },
+
+        // 表示中のステップに未入力・誤りがあれば、その欄でブラウザの案内を出して止める
+        next() {
+            const invalid = this.firstInvalid(this.stepBox(this.step));
+            if (invalid) {
+                invalid.focus();
+                invalid.reportValidity();
+                return;
+            }
+            this.go(this.step + 1);
+        },
+
+        back() {
+            this.go(this.step - 1);
+        },
+
+        go(number, field = null, report = false) {
+            this.step = Math.min(Math.max(number, 1), this.total);
+            // x-show は次の描画のタイミングで表示を切り替えるので、フォーカスはその後に移す
+            const later = document.visibilityState === 'visible' ? window.requestAnimationFrame : window.setTimeout;
+            this.$nextTick(() => later(() => {
+                if (field) {
+                    // 欄の上の項目名も見えるよう、画面の中ほどに出してからフォーカスする
+                    field.scrollIntoView({ block: 'center' });
+                    field.focus({ preventScroll: true });
+                    if (report) field.reportValidity();
+                    return;
+                }
+                this.$refs.progress.scrollIntoView({ block: 'start' });
+                const title = this.stepBox(this.step).querySelector('[data-step-title]');
+                if (title) title.focus({ preventScroll: true });
+            }));
+        },
+
+        // 入力欄で Enter を押したときは、途中のステップなら送信せずに「次へ進む」と同じ動きにする（日本語の変換確定は除く）
+        onEnter(event) {
+            if (event.isComposing || event.keyCode === 229) return;
+            const target = event.target;
+            if (this.step >= this.total || !(target instanceof HTMLInputElement)) return;
+            if (['button', 'submit', 'checkbox'].includes(target.type)) return;
+            event.preventDefault();
+            this.next();
+        },
+
+        // 送信の前に、別のステップにある欄の未入力・誤りを探し、あればそのステップを開いて知らせる
+        beforeSubmit(event) {
+            const invalid = this.firstInvalid(this.form);
+            if (!invalid) return;
+            const number = this.stepOf(invalid);
+            if (number !== null && number !== this.step) {
+                event.preventDefault();
+                this.go(number, invalid, true);
+            }
+        },
+
+        // エラー一覧のリンク：隠れたステップの欄なら、そのステップを開いてから欄へ移動する
+        onErrorLink(event) {
+            const link = event.target instanceof Element ? event.target.closest('.c-form-errors__link') : null;
+            if (!link) return;
+            const field = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+            if (!field) return;
+            event.preventDefault();
+            this.go(this.stepOf(field) || this.step, field);
+        },
+    }));
+});
+</script>
+@endpush

@@ -12,6 +12,7 @@ Route::get('/cars/compare', [CarController::class, 'compare'])->name('cars.compa
 Route::get('/cars/{car}', [CarController::class, 'show'])->name('cars.show');
 Route::get('/favorites', [CarController::class, 'favorites'])->name('cars.favorites');
 Route::get('/store', fn () => view('store'))->name('store');
+Route::view('/privacy', 'privacy')->name('privacy');
 Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 
 // Contact Routes
@@ -23,6 +24,11 @@ Route::get('/contact/thanks', [App\Http\Controllers\ContactController::class, 't
 Route::get('/buy', [App\Http\Controllers\BuyController::class, 'index'])->name('buy.index');
 Route::post('/buy', [App\Http\Controllers\BuyController::class, 'send'])->name('buy.send');
 Route::get('/buy/thanks', [App\Http\Controllers\BuyController::class, 'thanks'])->name('buy.thanks');
+
+// 共通部品の見本（開発用。APP_ENV=local のときだけ登録する）
+if (app()->isLocal()) {
+    Route::view('/_styleguide', 'dev.styleguide')->name('dev.styleguide');
+}
 
 // Auth Routes (Dashboard)
 Route::get('/dashboard', function () {
